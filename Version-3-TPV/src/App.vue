@@ -52,12 +52,13 @@ import { useOrdersLiveStore } from './stores/ordersLiveStore'
 import { useTableSessionStore } from './stores/tableSessionStore'
 import { useCompanySettings } from './stores/companySettings'
 import { downloadInvoicePdf, type InvoiceItem } from './utils/invoicePdf'
+import { getPaymentCardAmount, getPaymentCashAmount } from './utils/orderItemStatus'
 
 type ClosedInvoice = {
   tableNumber: string
   items: InvoiceItem[]
   total: number
-  paymentMethod: 'efectivo' | 'tarjeta'
+  paymentMethod: 'efectivo' | 'tarjeta' | 'mixto'
   splitCount?: number
   paidAt?: string
 }
@@ -85,6 +86,11 @@ const closedInvoice = ref<ClosedInvoice | null>(readClosedInvoice())
 const isTableQrRoute = computed(() => route.name === 'table-session')
 const isStaffRoute = computed(() => ['pos', 'kitchen', 'admin', 'login'].includes(String(route.name ?? '')))
 const showBottomNav = computed(() => !isStaffRoute.value && !isTableQrRoute.value && !paymentClosed.value)
+const getInvoicePaymentMethod = (payment: { total: number; paymentMethod?: 'efectivo' | 'tarjeta'; paymentCashAmount?: number; paymentCardAmount?: number }) => {
+  const cashAmount = getPaymentCashAmount(payment)
+  const cardAmount = getPaymentCardAmount(payment)
+  return cashAmount > 0 && cardAmount > 0 ? 'mixto' as const : cardAmount > 0 ? 'tarjeta' as const : 'efectivo' as const
+}
 
 const createClosedInvoice = (paidOrders: typeof orders.value, tableNumber: string): ClosedInvoice => {
   const mergedItems = new Map<string, InvoiceItem>()
@@ -110,7 +116,7 @@ const createClosedInvoice = (paidOrders: typeof orders.value, tableNumber: strin
     tableNumber,
     items: [...mergedItems.values()],
     total: paidOrders.reduce((sum, order) => sum + order.total, 0),
-    paymentMethod: paidOrders[0]?.paymentMethod ?? 'efectivo',
+    paymentMethod: getInvoicePaymentMethod(paidOrders[0] ?? { total: 0 }),
     splitCount: paidOrders[0]?.paymentSplitCount ?? 1,
     paidAt: paidOrders[0]?.paidAt,
   }

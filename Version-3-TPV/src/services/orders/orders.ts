@@ -29,6 +29,10 @@ export type OrderRecord = {
   paymentMethod?: 'efectivo' | 'tarjeta'
   paymentRequested?: boolean
   paymentSplitCount?: number
+  paymentCashPeople?: number
+  paymentCardPeople?: number
+  paymentCashAmount?: number
+  paymentCardAmount?: number
   paymentNote?: string
 }
 

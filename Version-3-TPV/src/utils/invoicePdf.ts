@@ -27,7 +27,7 @@ export type InvoiceData = {
   tableNumber: string
   items: InvoiceItem[]
   total: number
-  paymentMethod: 'efectivo' | 'tarjeta'
+  paymentMethod: 'efectivo' | 'tarjeta' | 'mixto'
   splitCount?: number
   paidAt?: string
   company?: InvoiceCompany
@@ -47,7 +47,7 @@ export const downloadInvoicePdf = ({
   const document = new jsPDF()
   const invoiceNumber = `FACT-${Date.now()}`
   const date = new Date(paidAt).toLocaleString('es-ES')
-  const paymentLabel = paymentMethod === 'tarjeta' ? 'Tarjeta' : 'Efectivo'
+  const paymentLabel = paymentMethod === 'tarjeta' ? 'Tarjeta' : paymentMethod === 'mixto' ? 'Mixto (efectivo y tarjeta)' : 'Efectivo'
   const safeSplitCount = Math.max(1, Math.trunc(Number(splitCount) || 1))
   const perPerson = total / safeSplitCount
   const companyName = company.legalName || company.restaurantName || 'Empresa'

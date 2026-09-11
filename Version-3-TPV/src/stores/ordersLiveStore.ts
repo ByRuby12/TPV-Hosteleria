@@ -4,7 +4,7 @@ import { db } from '../lib/firebase'
 import { commitPaymentTransaction, createDocumentWithId, getCollectionSnapshot, updateDocument, upsertDocument } from '../services/firebase/firestore'
 import type { OrderRecord } from '../services/orders/orders'
 import { deduplicateTables, type TableRecord } from '../services/tables/tables'
-import { getOrderBillableTotal } from '../utils/orderItemStatus'
+import { getOrderBillableTotal, hasBillableOrderItems } from '../utils/orderItemStatus'
 
 // Convert Firestore Timestamp to ISO string
 const normalizeTimestamp = (value: any): string => {
@@ -173,6 +173,7 @@ export function useOrdersLiveStore() {
       ...order,
       items,
       total,
+      status: hasBillableOrderItems(items) ? order.status : 'CANCELLED' as const,
       updatedAt: new Date().toISOString(),
     }
     state.orders = state.orders.map((item) => item.id === orderId ? updatedOrder : item)
@@ -454,19 +455,34 @@ export function useOrdersLiveStore() {
     paymentMethod: 'efectivo' | 'tarjeta' = 'efectivo',
     sessionId?: string,
     paidBy?: string,
+    paymentBreakdown?: {
+      cashPeople: number
+      cardPeople: number
+      cashAmount: number
+      cardAmount: number
+    },
   ) => {
     const now = new Date().toISOString()
     const ordersToPay = state.orders.filter((order) =>
       order.tableId === tableId &&
       (!sessionId || order.sessionId === sessionId) &&
       order.status !== 'PAID' &&
-      (order.status !== 'CANCELLED' || order.items.some((item) => item.status === 'REJECTED')),
+      order.status !== 'CANCELLED',
     )
     const previousOrders = state.orders
+    const cashPeople = paymentBreakdown?.cashPeople ?? (paymentMethod === 'efectivo' ? ordersToPay[0]?.paymentSplitCount ?? 1 : 0)
+    const cardPeople = paymentBreakdown?.cardPeople ?? (paymentMethod === 'tarjeta' ? ordersToPay[0]?.paymentSplitCount ?? 1 : 0)
+    const cashAmount = paymentBreakdown?.cashAmount
+    const cardAmount = paymentBreakdown?.cardAmount
 
     state.orders = state.orders.map((order) => {
-      if (order.tableId !== tableId || (sessionId && order.sessionId !== sessionId)) return order
+      if (
+        order.tableId !== tableId ||
+        (sessionId && order.sessionId !== sessionId) ||
+        order.status === 'CANCELLED'
+      ) return order
 
+      const orderIndex = ordersToPay.findIndex((paidOrder) => paidOrder.id === order.id)
       return {
         ...order,
         status: 'PAID',
@@ -475,6 +491,10 @@ export function useOrdersLiveStore() {
         paymentSplitCount: undefined,
         paymentNote: undefined,
         paymentMethod,
+        paymentCashPeople: orderIndex === 0 ? cashPeople : undefined,
+        paymentCardPeople: orderIndex === 0 ? cardPeople : undefined,
+        paymentCashAmount: orderIndex === 0 ? cashAmount : paymentBreakdown ? 0 : undefined,
+        paymentCardAmount: orderIndex === 0 ? cardAmount : paymentBreakdown ? 0 : undefined,
         paidAt: now,
         updatedAt: now,
       }
@@ -494,7 +514,7 @@ export function useOrdersLiveStore() {
 
     if (db && table && ordersToPay.length) {
       const paymentId = `payment-${tableId}-${sessionId ?? 'session'}-${Date.now()}`
-      const orderUpdates = ordersToPay.map((order) => ({
+      const orderUpdates = ordersToPay.map((order, orderIndex) => ({
         id: order.id,
         data: {
           status: 'PAID',
@@ -503,6 +523,10 @@ export function useOrdersLiveStore() {
           paymentSplitCount: undefined,
           paymentNote: undefined,
           paymentMethod,
+          paymentCashPeople: orderIndex === 0 ? cashPeople : undefined,
+          paymentCardPeople: orderIndex === 0 ? cardPeople : undefined,
+          paymentCashAmount: orderIndex === 0 ? cashAmount : paymentBreakdown ? 0 : undefined,
+          paymentCardAmount: orderIndex === 0 ? cardAmount : paymentBreakdown ? 0 : undefined,
           paidAt: now,
           updatedAt: now,
         },
@@ -519,6 +543,10 @@ export function useOrdersLiveStore() {
             total: ordersToPay.reduce((sum, order) => sum + getOrderBillableTotal(order.items), 0),
             paymentMethod,
             splitCount: ordersToPay[0].paymentSplitCount ?? 1,
+            cashPeople,
+            cardPeople,
+            cashAmount,
+            cardAmount,
             paidAt: now,
             paidBy: paidBy ?? null,
             status: 'PAID',

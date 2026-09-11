@@ -330,7 +330,9 @@
                 <p>{{ paidOrder.orderCount }} {{ paidOrder.orderCount === 1 ? 'comanda' : 'comandas' }} agrupadas</p>
                 <p>Entrada: {{ formatDateTime(paidOrder.createdAt) }}</p>
                 <p>Salida: {{ formatDateTime(paidOrder.paidAt ?? paidOrder.updatedAt) }}</p>
-                <p>Pago: {{ paidOrder.paymentMethod }}</p>
+                <p>{{ getPaymentLabel(paidOrder) }}</p>
+                <p v-if="getPaymentCashAmount(paidOrder) > 0">Efectivo: {{ formatPrice(getPaymentCashAmount(paidOrder)) }}</p>
+                <p v-if="getPaymentCardAmount(paidOrder) > 0">Tarjeta: {{ formatPrice(getPaymentCardAmount(paidOrder)) }}</p>
                 <div class="payment-history-items">
                   <span v-for="item in paidOrder.items" :key="item.key" :class="{ rejected: item.rejected }">
                     {{ item.quantity }}× {{ item.name }} · {{ item.rejected ? 'NO COBRADO' : formatPrice(item.subtotal) }}
@@ -821,6 +823,7 @@ import { deduplicateTables } from '../../services/tables/tables'
 import { isProductLowStock, isProductOutOfStock } from '../../utils/productStock'
 import { downloadInvoicePdf } from '../../utils/invoicePdf'
 import { downloadDataExportPdf } from '../../utils/dataExportPdf'
+import { getPaymentCardAmount, getPaymentCashAmount } from '../../utils/orderItemStatus'
 
 // Register ChartJS components explicitly so the line chart controller is available.
 ChartJS.register(
@@ -1150,7 +1153,7 @@ const paidHistory = computed(() => getPaidHistory())
 const groupedPaidHistory = computed(() => {
   const groups = new Map<string, any>()
   paidHistory.value.forEach((order) => {
-    const key = `${order.tableId}-${order.sessionId}-${order.paidAt ?? order.updatedAt}-${order.paymentMethod ?? 'efectivo'}`
+    const key = `${order.tableId}-${order.sessionId}-${order.paidAt ?? order.updatedAt}`
     const group = groups.get(key)
     const orderItems = order.items.map((item: any, index: number) => ({
       key: `${order.id}-${index}`,
@@ -1164,6 +1167,8 @@ const groupedPaidHistory = computed(() => {
     if (group) {
       group.orderCount += 1
       group.total += order.total
+      group.paymentCashAmount = getPaymentCashAmount(group) + getPaymentCashAmount(order)
+      group.paymentCardAmount = getPaymentCardAmount(group) + getPaymentCardAmount(order)
       group.items.push(...orderItems)
     } else {
       groups.set(key, {
@@ -1184,11 +1189,22 @@ const downloadPaidOrderInvoice = (order: any) => {
     tableNumber: getTableLabel(order.tableId),
     items: order.items,
     total: order.total,
-    paymentMethod: order.paymentMethod ?? 'efectivo',
+    paymentMethod: getInvoicePaymentMethod(order),
     splitCount: order.paymentSplitCount ?? 1,
     paidAt: order.paidAt ?? order.updatedAt,
     company: companySettings.value,
   })
+}
+const getPaymentLabel = (payment: any) => {
+  const cashAmount = getPaymentCashAmount(payment)
+  const cardAmount = getPaymentCardAmount(payment)
+  if (cashAmount > 0 && cardAmount > 0) return 'Pago mixto'
+  return cardAmount > 0 ? 'Pago con tarjeta' : 'Pago en efectivo'
+}
+const getInvoicePaymentMethod = (payment: any) => {
+  const cashAmount = getPaymentCashAmount(payment)
+  const cardAmount = getPaymentCardAmount(payment)
+  return cashAmount > 0 && cardAmount > 0 ? 'mixto' as const : cardAmount > 0 ? 'tarjeta' as const : 'efectivo' as const
 }
 const currentCashRegister = ref<any | null>(null)
 const cashClosures = ref<any[]>([])
@@ -1217,8 +1233,8 @@ const cashRegisterOrders = computed(() => {
   const openedAt = new Date(currentCashRegister.value.openedAt).getTime()
   return paidHistory.value.filter((order) => new Date(order.paidAt ?? order.updatedAt).getTime() >= openedAt)
 })
-const cashRegisterCashTotal = computed(() => cashRegisterOrders.value.filter((order) => order.paymentMethod !== 'tarjeta').reduce((sum, order) => sum + order.total, 0))
-const cashRegisterCardTotal = computed(() => cashRegisterOrders.value.filter((order) => order.paymentMethod === 'tarjeta').reduce((sum, order) => sum + order.total, 0))
+const cashRegisterCashTotal = computed(() => cashRegisterOrders.value.reduce((sum, order) => sum + getPaymentCashAmount(order), 0))
+const cashRegisterCardTotal = computed(() => cashRegisterOrders.value.reduce((sum, order) => sum + getPaymentCardAmount(order), 0))
 const cashRegisterTotal = computed(() => cashRegisterCashTotal.value + cashRegisterCardTotal.value)
 const cashMovementsIn = computed(() => cashMovements.value.filter((movement) => movement.type === 'in').reduce((sum, movement) => sum + Number(movement.amount || 0), 0))
 const cashMovementsOut = computed(() => cashMovements.value.filter((movement) => movement.type === 'out').reduce((sum, movement) => sum + Number(movement.amount || 0), 0))
@@ -1574,12 +1590,10 @@ const yearTotal = computed(() => {
 })
 
 const cashTotal = computed(() => paidHistory.value
-  .filter((order) => order.paymentMethod !== 'tarjeta')
-  .reduce((sum, order) => sum + (order.total || 0), 0))
+  .reduce((sum, order) => sum + getPaymentCashAmount(order), 0))
 
 const cardTotal = computed(() => paidHistory.value
-  .filter((order) => order.paymentMethod === 'tarjeta')
-  .reduce((sum, order) => sum + (order.total || 0), 0))
+  .reduce((sum, order) => sum + getPaymentCardAmount(order), 0))
 
 const cashTodayTotal = computed(() => {
   const start = new Date()
@@ -1588,12 +1602,11 @@ const cashTodayTotal = computed(() => {
   end.setDate(end.getDate() + 1)
 
   return paidHistory.value
-    .filter((order) => order.paymentMethod !== 'tarjeta')
     .filter((order) => {
       const paidDate = new Date(order.paidAt ?? order.updatedAt)
       return paidDate >= start && paidDate < end
     })
-    .reduce((sum, order) => sum + (order.total || 0), 0)
+    .reduce((sum, order) => sum + getPaymentCashAmount(order), 0)
 })
 
 const cardTodayTotal = computed(() => {
@@ -1603,12 +1616,11 @@ const cardTodayTotal = computed(() => {
   end.setDate(end.getDate() + 1)
 
   return paidHistory.value
-    .filter((order) => order.paymentMethod === 'tarjeta')
     .filter((order) => {
       const paidDate = new Date(order.paidAt ?? order.updatedAt)
       return paidDate >= start && paidDate < end
     })
-    .reduce((sum, order) => sum + (order.total || 0), 0)
+    .reduce((sum, order) => sum + getPaymentCardAmount(order), 0)
 })
 
 const selectModule = (key: 'categories' | 'products' | 'tables' | 'users' | 'company' | 'gallery' | 'support' | 'suppliers' | 'payment-history' | 'cash-register' | 'data-management' | 'statistics') => {

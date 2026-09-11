@@ -198,7 +198,7 @@ const handleLogout = async () => {
 }
 
 const activeKitchenOrders = computed(() => orders.value.filter((order) =>
-  !order.items.some((item) => item.status === 'REJECTED'),
+  order.items.some((item) => item.status !== 'REJECTED'),
 ))
 const pendingOrders = computed(() => activeKitchenOrders.value.filter((order) => order.status === 'PENDING'))
 const preparingOrders = computed(() => activeKitchenOrders.value.filter((order) => order.status === 'PREPARING'))

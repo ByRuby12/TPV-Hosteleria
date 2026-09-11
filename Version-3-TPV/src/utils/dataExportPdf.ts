@@ -1,4 +1,5 @@
 import { jsPDF } from 'jspdf'
+import { getPaymentCardAmount, getPaymentCashAmount } from './orderItemStatus'
 
 type ExportPeriod = 'week' | 'month' | 'year'
 
@@ -35,12 +36,8 @@ export const downloadDataExportPdf = (data: ExportData) => {
   let y = 22
   const periodLabel = periodLabels[data.period]
   const totalSales = data.paidOrders.reduce((sum, order) => sum + Number(order.total || 0), 0)
-  const cashSales = data.paidOrders
-    .filter((order) => order.paymentMethod !== 'tarjeta')
-    .reduce((sum, order) => sum + Number(order.total || 0), 0)
-  const cardSales = data.paidOrders
-    .filter((order) => order.paymentMethod === 'tarjeta')
-    .reduce((sum, order) => sum + Number(order.total || 0), 0)
+  const cashSales = data.paidOrders.reduce((sum, order) => sum + getPaymentCashAmount(order), 0)
+  const cardSales = data.paidOrders.reduce((sum, order) => sum + getPaymentCardAmount(order), 0)
 
   const ensureSpace = (height = 8) => {
     if (y + height > 278) {

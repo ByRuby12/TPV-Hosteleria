@@ -62,23 +62,35 @@
           </div>
 
           <div class="payment-method-section">
-            <h3>Método de pago</h3>
-            <div class="method-buttons">
-              <button
-                class="method-btn"
-                :class="{ active: paymentModal.method === 'efectivo' }"
-                @click="paymentModal.method = 'efectivo'"
-              >
-                💵 Efectivo
-              </button>
-              <button
-                class="method-btn"
-                :class="{ active: paymentModal.method === 'tarjeta' }"
-                @click="paymentModal.method = 'tarjeta'"
-              >
-                💳 Tarjeta
-              </button>
+            <h3>Reparto del cobro</h3>
+            <p class="payment-split-help">Indica cuántas personas pagan con cada método.</p>
+            <div class="payment-split-grid">
+              <label class="payment-split-field">
+                <span>💵 Efectivo</span>
+                <input
+                  :value="paymentModal.cashPeople"
+                  type="number"
+                  min="0"
+                  :max="paymentModal.splitCount"
+                  @input="setCashPeople(($event.target as HTMLInputElement).valueAsNumber)"
+                />
+                <small>{{ formatPrice(paymentCashAmount) }}</small>
+              </label>
+              <label class="payment-split-field">
+                <span>💳 Tarjeta</span>
+                <input
+                  :value="paymentModal.cardPeople"
+                  type="number"
+                  min="0"
+                  :max="paymentModal.splitCount"
+                  @input="setCardPeople(($event.target as HTMLInputElement).valueAsNumber)"
+                />
+                <small>{{ formatPrice(paymentCardAmount) }}</small>
+              </label>
             </div>
+            <p class="payment-split-total" :class="{ invalid: !paymentPeopleValid }">
+              {{ paymentModal.cashPeople + paymentModal.cardPeople }} de {{ paymentModal.splitCount }} personas asignadas
+            </p>
           </div>
 
           <div v-if="paymentModal.method === 'tarjeta'" class="payment-info">
@@ -92,7 +104,7 @@
 
           <div class="payment-actions">
             <button class="cancel-btn" @click="closePaymentModal">Cancelar</button>
-            <button class="confirm-btn" @click="confirmPayment">
+            <button class="confirm-btn" :disabled="!paymentPeopleValid" @click="confirmPayment">
               ✅ Cobrar {{ formatPrice(paymentModal.subtotal) }}
             </button>
           </div>
@@ -219,10 +231,10 @@
           </button>
 
           <div
-            v-else-if="order.items.some((item) => item.status === 'REJECTED')"
+            v-else-if="order.items.every((item) => item.status === 'REJECTED')"
             class="status-btn rejected-order-status"
           >
-            ⚠️ Producto rechazado · revisar cobro
+            ⚠️ Comanda cerrada · producto rechazado
           </div>
 
           <button
@@ -297,6 +309,8 @@ const paymentModal = ref({
   subtotal: 0,
   splitCount: 1,
   method: 'tarjeta' as 'efectivo' | 'tarjeta',
+  cashPeople: 0,
+  cardPeople: 1,
   perPerson: 0,
   note: '',
 })
@@ -306,13 +320,40 @@ const sanitizeSplitCount = (value: number) => {
   return Math.min(50, Math.max(1, parsed))
 }
 
+const roundCurrency = (value: number) => Math.round((value + Number.EPSILON) * 100) / 100
+
+const paymentPeopleValid = computed(() =>
+  paymentModal.value.cashPeople >= 0 &&
+  paymentModal.value.cardPeople >= 0 &&
+  paymentModal.value.cashPeople + paymentModal.value.cardPeople === paymentModal.value.splitCount,
+)
+
+const paymentCashAmount = computed(() => {
+  if (!paymentPeopleValid.value) return 0
+  return roundCurrency(paymentModal.value.subtotal * paymentModal.value.cashPeople / paymentModal.value.splitCount)
+})
+
+const paymentCardAmount = computed(() => roundCurrency(paymentModal.value.subtotal - paymentCashAmount.value))
+
+const setCashPeople = (value: number) => {
+  const cashPeople = Math.min(paymentModal.value.splitCount, Math.max(0, Math.trunc(Number.isFinite(value) ? value : 0)))
+  paymentModal.value.cashPeople = cashPeople
+  paymentModal.value.cardPeople = paymentModal.value.splitCount - cashPeople
+}
+
+const setCardPeople = (value: number) => {
+  const cardPeople = Math.min(paymentModal.value.splitCount, Math.max(0, Math.trunc(Number.isFinite(value) ? value : 0)))
+  paymentModal.value.cardPeople = cardPeople
+  paymentModal.value.cashPeople = paymentModal.value.splitCount - cardPeople
+}
+
 const openPaymentModal = (tableId: string) => {
   const table = tables.value.find(t => t.id === tableId)
   const tableOrders = orders.value.filter((order) =>
     order.tableId === tableId &&
     (!table?.currentSessionId || order.sessionId === table.currentSessionId) &&
     order.status !== 'PAID' &&
-    (order.status !== 'CANCELLED' || order.items.some((item) => item.status === 'REJECTED')),
+    order.status !== 'CANCELLED',
   )
   const mergedItems = new Map<string, { key: string; productId: string; name: string; quantity: number; subtotal: number; rejected?: boolean; rejectionReason?: string }>()
   tableOrders.forEach((order) => {
@@ -350,6 +391,8 @@ const openPaymentModal = (tableId: string) => {
     subtotal,
     splitCount,
     method,
+    cashPeople: method === 'efectivo' ? splitCount : 0,
+    cardPeople: method === 'tarjeta' ? splitCount : 0,
     perPerson: subtotal / splitCount,
     note,
   }
@@ -360,6 +403,7 @@ const closePaymentModal = () => {
 }
 
 const confirmPayment = async () => {
+  if (!paymentPeopleValid.value) return
   try {
     const table = tables.value.find((item) => item.id === paymentModal.value.tableId)
     await finalizeTable(
@@ -367,6 +411,12 @@ const confirmPayment = async () => {
       paymentModal.value.method,
       table?.currentSessionId ?? undefined,
       user.value?.email,
+      {
+        cashPeople: paymentModal.value.cashPeople,
+        cardPeople: paymentModal.value.cardPeople,
+        cashAmount: paymentCashAmount.value,
+        cardAmount: paymentCardAmount.value,
+      },
     )
     closePaymentModal()
   } catch (error) {
@@ -482,7 +532,7 @@ const selectedFilter = ref<'all' | 'PENDING' | 'PREPARING' | 'READY'>('all')
 
 const visibleOrders = computed(() => {
   const filtered = orders.value
-    .filter((order) => order.status !== 'PAID' && (order.status !== 'CANCELLED' || order.items.some((item) => item.status === 'REJECTED')))
+    .filter((order) => order.status !== 'PAID' && order.status !== 'CANCELLED')
     .filter((order) => selectedFilter.value === 'all' || order.status === selectedFilter.value)
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 
@@ -727,7 +777,7 @@ const getStatusEmoji = (status: OrderRecord['status']) => {
 
 /* ==================== CONTENT ==================== */
 .content {
-  padding: 28px clamp(16px, 3vw, 40px) 40px;
+  padding: 24px clamp(18px, 2.6vw, 36px) 40px;
   overflow-y: auto;
   overflow-x: hidden;
   display: flex;
@@ -746,7 +796,7 @@ const getStatusEmoji = (status: OrderRecord['status']) => {
   justify-content: space-between;
   align-items: flex-start;
   background: white;
-  padding: 26px 28px;
+  padding: 24px clamp(20px, 2.5vw, 30px);
   border-radius: 16px;
   margin-bottom: 24px;
   border: 1px solid #e2e8f0;
@@ -852,7 +902,7 @@ const getStatusEmoji = (status: OrderRecord['status']) => {
 .filters {
   display: flex;
   gap: 12px;
-  margin-bottom: 20px;
+  margin-bottom: 22px;
   padding: 4px;
   border: 1px solid #e2e8f0;
   border-radius: 12px;
@@ -896,8 +946,8 @@ const getStatusEmoji = (status: OrderRecord['status']) => {
 /* ==================== ORDERS GRID ==================== */
 .orders-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+  gap: 24px;
   flex: 1;
   align-content: start;
   min-width: 0;
@@ -905,10 +955,10 @@ const getStatusEmoji = (status: OrderRecord['status']) => {
 
 .order-card {
   background: white;
-  border-radius: 14px;
+  border-radius: 16px;
   overflow: hidden;
   border: 1px solid #e2e8f0;
-  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.07);
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.08);
   transition: all 0.3s ease;
   animation: cardSlideIn 0.4s ease;
   position: relative;
@@ -949,7 +999,7 @@ const getStatusEmoji = (status: OrderRecord['status']) => {
 }
 
 .order-card > * {
-  padding: 0 18px;
+  padding: 0 22px;
 }
 
 .order-card > *:first-of-type {
@@ -960,8 +1010,8 @@ const getStatusEmoji = (status: OrderRecord['status']) => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-top: 18px !important;
-  padding-bottom: 8px !important;
+  padding-top: 20px !important;
+  padding-bottom: 10px !important;
   gap: 12px;
 }
 
@@ -1001,11 +1051,11 @@ const getStatusEmoji = (status: OrderRecord['status']) => {
 }
 
 .card-items {
-  padding-bottom: 12px !important;
+  padding-bottom: 14px !important;
   background: #f8fafc;
   border-radius: 10px;
-  margin: 0 18px 12px;
-  padding: 12px !important;
+  margin: 0 22px 14px;
+  padding: 14px !important;
 }
 
 .card-items h4 {
@@ -1024,11 +1074,12 @@ const getStatusEmoji = (status: OrderRecord['status']) => {
 }
 
 .item {
-  padding: 6px 0;
+  min-height: 42px;
+  padding: 8px 0;
   font-size: 0.95rem;
   color: #1e293b;
   display: flex;
-  gap: 8px;
+  gap: 10px;
   line-height: 1.4;
   min-width: 0;
 }
@@ -1051,7 +1102,8 @@ const getStatusEmoji = (status: OrderRecord['status']) => {
   flex: 0 0 auto;
   border: 1px solid #fecaca;
   border-radius: 8px;
-  padding: 4px 7px;
+  min-height: 32px;
+  padding: 5px 9px;
   background: #fff1f2;
   color: #b91c1c;
   cursor: pointer;
@@ -1215,9 +1267,10 @@ const getStatusEmoji = (status: OrderRecord['status']) => {
 }
 
 .status-btn {
-  width: calc(100% + 36px);
-  margin: 0 -18px -0px;
-  padding: 13px 18px;
+  width: calc(100% + 44px);
+  margin: 0 -22px;
+  min-height: 52px;
+  padding: 14px 22px;
   border: none;
   background: #f59e0b;
   color: white;
@@ -1225,7 +1278,7 @@ const getStatusEmoji = (status: OrderRecord['status']) => {
   cursor: pointer;
   transition: all 0.3s ease;
   border-top: 1px solid #e5e7eb;
-  font-size: 0.95rem;
+  font-size: 0.96rem;
   letter-spacing: 0.01em;
 }
 
@@ -1384,7 +1437,7 @@ const getStatusEmoji = (status: OrderRecord['status']) => {
 /* ==================== RESPONSIVE ==================== */
 @media (max-width: 1200px) {
   .orders-grid {
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
   }
 
   .topbar {
@@ -1488,7 +1541,7 @@ const getStatusEmoji = (status: OrderRecord['status']) => {
   }
 
   .content {
-    padding: 16px;
+    padding: 14px 12px 28px;
   }
 
   .pagination {
@@ -1508,8 +1561,9 @@ const getStatusEmoji = (status: OrderRecord['status']) => {
   }
 
   .topbar {
-    padding: 20px 16px;
+    padding: 18px 16px;
     gap: 18px;
+    border-radius: 14px;
   }
 
   .topbar-right {
@@ -1537,6 +1591,8 @@ const getStatusEmoji = (status: OrderRecord['status']) => {
   }
 
   .filters {
+    margin-inline: 2px;
+    border-radius: 11px;
     gap: 8px;
     margin-bottom: 16px;
     padding-bottom: 10px;
@@ -1548,13 +1604,15 @@ const getStatusEmoji = (status: OrderRecord['status']) => {
   }
 
   .order-card {
-    border-radius: 13px;
+    border-radius: 15px;
   }
 
   .card-header {
     align-items: flex-start;
     flex-direction: column;
-    gap: 8px;
+    gap: 7px;
+    padding-top: 16px !important;
+    padding-bottom: 8px !important;
   }
 
   .order-id {
@@ -1562,21 +1620,46 @@ const getStatusEmoji = (status: OrderRecord['status']) => {
   }
 
   .item {
-    align-items: stretch;
-    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
   }
 
   .item .name {
     flex: 1 1 calc(100% - 40px);
+    min-width: 0;
+    overflow-wrap: anywhere;
   }
 
   .reject-item-btn {
-    width: 100%;
-    min-height: 36px;
+    width: auto;
+    min-height: 34px;
+    margin-left: auto;
+    padding-inline: 10px;
   }
 
   .status-btn {
-    min-height: 46px;
+    width: calc(100% + 32px);
+    margin-inline: -16px;
+    min-height: 50px;
+    padding-inline: 16px;
+  }
+
+  .card-items {
+    margin-inline: 16px;
+    padding: 12px !important;
+  }
+
+  .order-card > * {
+    padding-inline: 16px;
+  }
+
+  .card-total {
+    padding-top: 10px !important;
+    padding-bottom: 12px !important;
+  }
+
+  .orders-grid {
+    gap: 16px;
   }
 
   .pagination {
@@ -1848,6 +1931,56 @@ const getStatusEmoji = (status: OrderRecord['status']) => {
   margin-bottom: 12px;
 }
 
+.payment-split-help {
+  margin: -4px 0 12px;
+  color: #6b7280;
+  font-size: 0.84rem;
+}
+
+.payment-split-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.payment-split-field {
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #f9fafb;
+  color: #374151;
+  font-weight: 700;
+}
+
+.payment-split-field input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: white;
+  color: #111827;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.payment-split-field small {
+  color: #047857;
+  font-size: 0.82rem;
+}
+
+.payment-split-total {
+  margin: 10px 0 0;
+  color: #047857;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.payment-split-total.invalid {
+  color: #b91c1c;
+}
+
 .method-buttons {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1962,6 +2095,13 @@ const getStatusEmoji = (status: OrderRecord['status']) => {
   transform: translateY(0);
 }
 
+.confirm-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  transform: none;
+  box-shadow: none;
+}
+
 @media (max-width: 768px) {
   .payment-modal {
     max-width: 95%;
@@ -1973,6 +2113,10 @@ const getStatusEmoji = (status: OrderRecord['status']) => {
   }
 
   .method-buttons {
+    grid-template-columns: 1fr;
+  }
+
+  .payment-split-grid {
     grid-template-columns: 1fr;
   }
 

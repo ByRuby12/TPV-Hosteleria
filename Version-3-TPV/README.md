@@ -2,6 +2,18 @@
 
 Este proyecto está basado en Vue 3 + Vite + TypeScript y está preparado para evolucionar hacia una app completa de pedidos por QR, TPV, cocina y administración.
 
+## Cómo funciona
+
+En pocas palabras, la plataforma conecta al cliente, al camarero, la cocina y la administración en tiempo real:
+
+- El cliente escanea el QR de la mesa, consulta la carta y envía pedidos.
+- El camarero recibe las comandas y puede avanzar su estado, rechazar productos no disponibles y gestionar el cobro.
+- La cocina visualiza los pedidos pendientes y los marca como preparados.
+- Cuando el cliente solicita pagar, el camarero ve la cuenta, incluidos los productos rechazados, y puede registrar pagos en efectivo, tarjeta o combinados.
+- Administración controla productos, mesas, usuarios, caja, históricos y estadísticas.
+
+Técnicamente, es una aplicación Vue 3 con TypeScript y Vite. Firebase proporciona autenticación, Firestore y sincronización en tiempo real. Las vistas están separadas por roles y la lógica de pedidos, sesiones, mesas, pagos y caja se organiza en stores, servicios y utilidades reutilizables.
+
 ## Requisitos
 
 - Node.js 18+

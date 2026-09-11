@@ -467,12 +467,20 @@ const getPaymentActionLabel = (order: OrderRecord) =>
   getPaymentMethod(order) === 'tarjeta' ? 'Cobrar con tarjeta' : 'Cobrar en efectivo'
 
 const mergeOrderItems = (ordersToMerge: OrderRecord[]) => {
-  const mergedMap = new Map<string, { key: string; productId: string; name: string; price: number; quantity: number; subtotal: number }>()
+  const mergedMap = new Map<string, {
+    key: string
+    productId: string
+    name: string
+    price: number
+    quantity: number
+    subtotal: number
+    status?: OrderRecord['items'][number]['status']
+    rejectionReason?: string
+  }>()
 
   ordersToMerge.forEach((order) => {
     order.items.forEach((item) => {
-      if (isOrderItemRejected(item)) return
-      const key = `${item.productId}-${item.note ?? ''}-${(item.options ?? []).join(',')}`
+      const key = `${item.productId}-${item.status ?? 'PENDING'}-${item.note ?? ''}-${(item.options ?? []).join(',')}`
       const existing = mergedMap.get(key)
 
       if (existing) {
@@ -486,6 +494,8 @@ const mergeOrderItems = (ordersToMerge: OrderRecord[]) => {
           price: item.price,
           quantity: item.quantity,
           subtotal: item.subtotal,
+          status: item.status,
+          rejectionReason: item.rejectionReason,
         })
       }
     })
@@ -550,11 +560,15 @@ const paginatedOrders = computed(() => {
 const orderLanes = [
   { key: 'PENDING', kicker: '01', title: 'Nuevos', statuses: ['PENDING'] as OrderRecord['status'][] },
   { key: 'PREPARING', kicker: '02', title: 'En preparación', statuses: ['PREPARING'] as OrderRecord['status'][] },
-  { key: 'READY', kicker: '03', title: 'Listos', statuses: ['READY', 'DELIVERED'] as OrderRecord['status'][] },
+  { key: 'READY', kicker: '03', title: 'Listos', statuses: ['READY'] as OrderRecord['status'][] },
+  { key: 'PAYMENT', kicker: '04', title: 'Pendiente de pago', statuses: ['DELIVERED'] as OrderRecord['status'][] },
 ]
 
 const ordersForLane = (statuses: OrderRecord['status'][]) =>
-  paginatedOrders.value.filter((order) => statuses.includes(order.status))
+  paginatedOrders.value.filter((order) => {
+    if (!statuses.includes(order.status)) return false
+    return statuses.includes('DELIVERED') ? Boolean(order.paymentRequested) : true
+  })
 
 const paginationStart = computed(() => (currentPage.value - 1) * pageSize + 1)
 const paginationEnd = computed(() => Math.min(currentPage.value * pageSize, visibleOrders.value.length))
@@ -787,6 +801,9 @@ const getStatusEmoji = (status: OrderRecord['status']) => {
 
 /* ==================== CONTENT ==================== */
 .content {
+  width: 100%;
+  max-width: none;
+  justify-self: stretch;
   padding: 24px clamp(18px, 2.6vw, 36px) 40px;
   overflow-y: auto;
   overflow-x: hidden;
@@ -803,6 +820,7 @@ const getStatusEmoji = (status: OrderRecord['status']) => {
 }
 
 .topbar {
+  width: 100%;
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
@@ -956,8 +974,9 @@ const getStatusEmoji = (status: OrderRecord['status']) => {
 
 /* ==================== ORDERS GRID ==================== */
 .orders-board {
+  width: 100%;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 18px;
   flex: 1;
   align-content: start;
@@ -980,6 +999,10 @@ const getStatusEmoji = (status: OrderRecord['status']) => {
 
 .order-lane.ready {
   border-top-color: #22c55e;
+}
+
+.order-lane.payment {
+  border-top-color: #e85d04;
 }
 
 .lane-header {

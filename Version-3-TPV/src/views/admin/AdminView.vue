@@ -148,7 +148,7 @@
             <label class="field-block field-block-wide">
               <span>Imagen</span>
               <input v-model="newProductImage" placeholder="URL de la imagen del producto" />
-              <select class="gallery-image-select" aria-label="Elegir imagen de la galería" @change="newProductImage = selectedGalleryUrl($event)">
+              <select v-model="newProductImage" class="gallery-image-select" aria-label="Elegir imagen de la galería">
                 <option value="">Elegir desde la galería...</option>
                 <option v-for="image in galleryImages" :key="image.id" :value="image.url">{{ image.name }}</option>
               </select>
@@ -236,7 +236,7 @@
                 <label class="field-block field-block-wide">
                   <span>Imagen</span>
                   <input v-model="editingProduct.image" placeholder="URL imagen del producto" class="edit-input" />
-                  <select class="gallery-image-select" aria-label="Elegir imagen de la galería" @change="editingProduct.image = selectedGalleryUrl($event)">
+                  <select v-model="editingProduct.image" class="gallery-image-select" aria-label="Elegir imagen de la galería">
                     <option value="">Elegir desde la galería...</option>
                     <option v-for="image in galleryImages" :key="image.id" :value="image.url">{{ image.name }}</option>
                   </select>
@@ -611,10 +611,6 @@
           </div>
 
           <div class="field-grid two-columns">
-            <div class="company-section-heading company-section-heading-wide">
-              <span>04</span>
-              <div><h3>Identidad visual</h3><p>Selecciona imágenes de la galería o pega una URL.</p></div>
-            </div>
             <div class="field-group">
               <label>Teléfono</label>
               <input v-model="companyForm.phone" placeholder="Ej: +34 600 000 000" />
@@ -631,10 +627,14 @@
           </div>
 
           <div class="field-grid two-columns">
-            <div class="field-group">
-              <label>Logo del restaurante</label>
+            <div class="company-section-heading company-section-heading-wide">
+              <span>04</span>
+              <div><h3>Identidad visual</h3><p>Selecciona imágenes de la galería o pega una URL.</p></div>
+            </div>
+            <div class="field-block">
+              <span>Logo del restaurante</span>
               <input v-model="companyForm.logoImage" placeholder="URL o ruta de imagen para el logo" />
-              <select class="gallery-image-select" aria-label="Elegir logo desde la galería" @change="companyForm.logoImage = selectedGalleryUrl($event)">
+              <select v-model="companyForm.logoImage" class="gallery-image-select" aria-label="Elegir logo desde la galería">
                 <option value="">Elegir desde la galería...</option>
                 <option v-for="image in galleryImages" :key="image.id" :value="image.url">{{ image.name }}</option>
               </select>
@@ -643,10 +643,10 @@
                 <button class="chip" type="button" @click="companyForm.logoImage = ''">Quitar selección</button>
               </div>
             </div>
-            <div class="field-group">
-              <label>Banner principal</label>
+            <div class="field-block">
+              <span>Banner principal</span>
               <input v-model="companyForm.bannerImage" placeholder="URL o ruta de imagen para el banner" />
-              <select class="gallery-image-select" aria-label="Elegir banner desde la galería" @change="companyForm.bannerImage = selectedGalleryUrl($event)">
+              <select v-model="companyForm.bannerImage" class="gallery-image-select" aria-label="Elegir banner desde la galería">
                 <option value="">Elegir desde la galería...</option>
                 <option v-for="image in galleryImages" :key="image.id" :value="image.url">{{ image.name }}</option>
               </select>
@@ -1568,8 +1568,6 @@ const selectModule = (key: 'categories' | 'products' | 'tables' | 'users' | 'com
   selectedModule.value = key
 }
 
-const selectedGalleryUrl = (event: Event) => (event.target as HTMLSelectElement).value
-
 const normalizeAdminImage = (value: string) => {
   if (!value) return ''
   if (value.startsWith('http://') || value.startsWith('https://')) return value
@@ -2413,11 +2411,26 @@ h1 {
   background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
   border-radius: 50%;
   pointer-events: none;
+.field-group select {
+  width: 100%;
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.76);
+  color: white;
+  font: inherit;
+}
 }
 
 .stat-box:hover {
   transform: translateY(-6px);
   box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4);
+.field-group select:focus {
+  outline: none;
+  border-color: #f97316;
+  box-shadow: 0 0 12px rgba(249, 115, 22, 0.18);
+}
   border-color: rgba(255, 255, 255, 0.2);
 }
 
@@ -3346,6 +3359,20 @@ h1 {
   outline: none;
   border-color: #f97316;
   box-shadow: 0 0 12px rgba(249, 115, 22, 0.18);
+}
+
+.gallery-image-select {
+  color-scheme: dark;
+  appearance: auto;
+  border-color: rgba(249, 115, 22, 0.42) !important;
+  background: rgba(30, 41, 59, 0.92) !important;
+  color: #fed7aa !important;
+  font-size: 0.86rem !important;
+}
+
+.gallery-image-select option {
+  background: #1e293b;
+  color: #f8fafc;
 }
 
 .field-block-wide,

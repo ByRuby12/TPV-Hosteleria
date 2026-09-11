@@ -570,6 +570,7 @@ const getStatusEmoji = (status: OrderRecord['status']) => {
   height: 100vh;
   overflow: hidden;
   background: linear-gradient(135deg, #f0f4f8 0%, #d9e2ec 100%);
+  min-width: 0;
 }
 
 .logout-btn {
@@ -606,6 +607,7 @@ const getStatusEmoji = (status: OrderRecord['status']) => {
   height: 100vh;
   box-shadow: 2px 0 20px rgba(0, 0, 0, 0.2);
   overflow: hidden;
+  min-width: 0;
 }
 
 .sidebar-header {
@@ -732,6 +734,7 @@ const getStatusEmoji = (status: OrderRecord['status']) => {
   flex-direction: column;
   scrollbar-width: none;
   -ms-overflow-style: none;
+  min-width: 0;
 }
 
 .content::-webkit-scrollbar {
@@ -752,6 +755,7 @@ const getStatusEmoji = (status: OrderRecord['status']) => {
 
 .topbar-left {
   flex: 1;
+  min-width: 0;
 }
 
 .eyebrow {
@@ -791,6 +795,7 @@ const getStatusEmoji = (status: OrderRecord['status']) => {
 .topbar-right {
   display: flex;
   align-items: center;
+  min-width: 0;
 }
 
 .stats-mini {
@@ -888,6 +893,7 @@ const getStatusEmoji = (status: OrderRecord['status']) => {
   gap: 20px;
   flex: 1;
   align-content: start;
+  min-width: 0;
 }
 
 .order-card {
@@ -898,6 +904,7 @@ const getStatusEmoji = (status: OrderRecord['status']) => {
   transition: all 0.3s ease;
   animation: cardSlideIn 0.4s ease;
   position: relative;
+  min-width: 0;
 }
 
 @keyframes cardSlideIn {
@@ -1011,6 +1018,7 @@ const getStatusEmoji = (status: OrderRecord['status']) => {
   display: flex;
   gap: 8px;
   line-height: 1.4;
+  min-width: 0;
 }
 
 .item.rejected {
@@ -1158,6 +1166,8 @@ const getStatusEmoji = (status: OrderRecord['status']) => {
 
 .name {
   flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .card-note {
@@ -1372,6 +1382,11 @@ const getStatusEmoji = (status: OrderRecord['status']) => {
   .stats-mini {
     width: 100%;
   }
+
+  .topbar-right {
+    width: 100%;
+    justify-content: space-between;
+  }
 }
 
 @media (max-width: 768px) {
@@ -1388,6 +1403,8 @@ const getStatusEmoji = (status: OrderRecord['status']) => {
   .tables-list {
     grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
     max-height: 120px;
+    padding: 10px;
+    gap: 8px;
   }
 
   .table-card {
@@ -1401,7 +1418,9 @@ const getStatusEmoji = (status: OrderRecord['status']) => {
   }
 
   .topbar h1 {
-    font-size: 1.5rem;
+    font-size: clamp(1.45rem, 7vw, 1.8rem);
+    line-height: 1.1;
+    overflow-wrap: anywhere;
   }
 
   .orders-grid {
@@ -1429,7 +1448,121 @@ const getStatusEmoji = (status: OrderRecord['status']) => {
   }
 
   .topbar {
-    padding: 20px;
+    padding: 20px 16px;
+    gap: 18px;
+  }
+
+  .topbar-right {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .stats-mini {
+    gap: 8px;
+  }
+
+  .stat-mini {
+    padding: 12px 8px;
+  }
+
+  .stat-mini .value {
+    font-size: 1.5rem;
+  }
+
+  .logout-btn {
+    width: 100%;
+    min-height: 44px;
+    margin-left: 0;
+  }
+
+  .filters {
+    gap: 8px;
+    margin-bottom: 16px;
+    padding-bottom: 10px;
+  }
+
+  .filter-btn {
+    min-height: 42px;
+    padding: 9px 12px;
+  }
+
+  .order-card {
+    border-radius: 13px;
+  }
+
+  .card-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .order-id {
+    font-size: 0.78rem;
+  }
+
+  .item {
+    align-items: stretch;
+    flex-wrap: wrap;
+  }
+
+  .item .name {
+    flex: 1 1 calc(100% - 40px);
+  }
+
+  .reject-item-btn {
+    width: 100%;
+    min-height: 36px;
+  }
+
+  .status-btn {
+    min-height: 46px;
+  }
+
+  .pagination {
+    padding: 12px;
+  }
+
+  .pagination-summary {
+    text-align: center;
+    line-height: 1.35;
+  }
+
+  .rejection-modal-overlay,
+  .payment-modal-overlay {
+    padding: 10px;
+  }
+
+  .rejection-modal,
+  .payment-modal {
+    width: 100%;
+    max-width: none;
+    max-height: calc(100vh - 20px);
+    padding: 20px 16px 16px;
+    border-radius: 16px;
+  }
+
+  .rejection-actions,
+  .payment-actions {
+    grid-template-columns: 1fr;
+    display: grid;
+  }
+
+  .rejection-cancel,
+  .rejection-confirm,
+  .cancel-btn,
+  .confirm-btn {
+    min-height: 44px;
+    width: 100%;
+  }
+
+  .payment-modal h2 {
+    font-size: 1.3rem;
+    padding-right: 24px;
+  }
+
+  .method-btn {
+    min-height: 46px;
   }
 }
 
@@ -1785,6 +1918,74 @@ const getStatusEmoji = (status: OrderRecord['status']) => {
 
   .payment-actions {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .content {
+    padding: 10px;
+  }
+
+  .sidebar-header {
+    padding: 16px 14px;
+  }
+
+  .sidebar-header h2 {
+    font-size: 1.05rem;
+  }
+
+  .table-card {
+    padding: 8px;
+  }
+
+  .table-number {
+    width: 38px;
+    height: 38px;
+    font-size: 1rem;
+  }
+
+  .table-badge,
+  .card-note {
+    overflow-wrap: anywhere;
+  }
+
+  .page-btn {
+    min-height: 42px;
+    font-size: 0.78rem;
+  }
+
+  .payment-item {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .payment-name {
+    flex: 1 1 calc(100% - 45px);
+    min-width: 0;
+    padding: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .payment-price {
+    flex: 1 1 100%;
+    min-width: 0;
+    padding-left: 35px;
+    text-align: left;
+  }
+
+  .total-line {
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pos-layout *,
+  .pos-layout *::before,
+  .pos-layout *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
   }
 }
 </style>

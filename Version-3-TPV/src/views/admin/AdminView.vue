@@ -712,7 +712,7 @@
           </label>
           <p v-if="galleryFeedback" class="field-hint">{{ galleryFeedback }}</p>
         </div>
-        <div v-if="uploadedGalleryImages.length" class="gallery-admin-grid">
+        <div v-if="galleryImages.length" class="gallery-admin-grid">
           <article v-for="image in paginatedGalleryImages" :key="image.id" class="gallery-admin-item">
             <img :src="image.url" :alt="image.name" />
             <div class="gallery-admin-item-info">
@@ -726,7 +726,7 @@
             </div>
           </article>
         </div>
-        <p v-else class="history-empty">Todavía no hay imágenes subidas. Las imágenes locales están disponibles en los selectores de Productos y Empresa.</p>
+        <p v-else class="history-empty">Todavía no hay imágenes disponibles.</p>
         <div v-if="galleryPageCount > 1" class="gallery-pagination">
           <button class="chip" type="button" :disabled="galleryPage === 1" @click="galleryPage--">Anterior</button>
           <span>Página {{ galleryPage }} de {{ galleryPageCount }}</span>
@@ -846,11 +846,10 @@ const galleryFeedback = ref('')
 const galleryDeletingId = ref('')
 const galleryPage = ref(1)
 const galleryPageSize = 5
-const uploadedGalleryImages = computed(() => galleryImages.value.filter((image) => image.storagePath))
-const galleryPageCount = computed(() => Math.max(1, Math.ceil(uploadedGalleryImages.value.length / galleryPageSize)))
+const galleryPageCount = computed(() => Math.max(1, Math.ceil(galleryImages.value.length / galleryPageSize)))
 const paginatedGalleryImages = computed(() => {
   const start = (galleryPage.value - 1) * galleryPageSize
-  return uploadedGalleryImages.value.slice(start, start + galleryPageSize)
+  return galleryImages.value.slice(start, start + galleryPageSize)
 })
 
 watch(galleryPageCount, (pageCount) => {

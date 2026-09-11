@@ -95,15 +95,15 @@ const formatTime = (value: string | undefined) => {
 }
 
 .check {
-  width: 76px;
-  height: 76px;
-  margin: 0 auto 14px;
-  border-radius: 20px;
+  width: 58px;
+  height: 58px;
+  margin: 0 auto 10px;
+  border-radius: 16px;
   background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
   display: grid;
   place-items: center;
   color: white;
-  font-size: 2.5rem;
+  font-size: 1.9rem;
   font-weight: 800;
 }
 

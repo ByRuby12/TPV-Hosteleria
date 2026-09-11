@@ -165,27 +165,32 @@
         </div>
       </div>
 
-      <div class="filters">
-        <button class="filter-btn" :class="{ active: selectedFilter === 'all' }" @click="selectedFilter = 'all'">Todos los pedidos</button>
-        <button class="filter-btn" :class="{ active: selectedFilter === 'PENDING' }" @click="selectedFilter = 'PENDING'">Nuevos</button>
-        <button class="filter-btn" :class="{ active: selectedFilter === 'PREPARING' }" @click="selectedFilter = 'PREPARING'">En preparación</button>
-        <button class="filter-btn" :class="{ active: selectedFilter === 'READY' }" @click="selectedFilter = 'READY'">Listos</button>
-      </div>
+      <section class="orders-board">
+        <section v-for="lane in orderLanes" :key="lane.key" class="order-lane" :class="lane.key.toLowerCase()">
+          <header class="lane-header">
+            <div>
+              <span class="lane-kicker">{{ lane.kicker }}</span>
+              <h2>{{ lane.title }}</h2>
+            </div>
+            <span class="lane-count">{{ ordersForLane(lane.statuses).length }}</span>
+          </header>
 
-      <section class="orders-grid">
-        <article
-          v-for="order in paginatedOrders"
-          :key="order.id"
-          class="order-card"
-          :class="order.status.toLowerCase()"
-        >
+          <div v-if="ordersForLane(lane.statuses).length" class="lane-orders">
+            <article
+              v-for="order in ordersForLane(lane.statuses)"
+              :key="order.id"
+              class="order-card"
+              :class="order.status.toLowerCase()"
+            >
           <div class="card-status-bar" :class="order.status.toLowerCase()"></div>
 
           <div class="card-header">
             <div class="table-badge" :class="order.status.toLowerCase()">
               MESA {{ getTableLabel(order.tableId) }}
             </div>
-            <span class="order-id">Pedido {{ getOrderNumber(order.id) }}</span>
+            <div class="card-header-meta">
+              <span class="order-id">Pedido {{ getOrderNumber(order.id) }}</span>
+            </div>
           </div>
 
           <div class="card-time">
@@ -214,12 +219,12 @@
           </div>
 
           <button
-            v-if="isPaymentRequested(order.tableId)"
+            v-if="isPaymentRequested(order)"
             class="status-btn payment"
-            :class="getPaymentMethod(order.tableId)"
+            :class="getPaymentMethod(order)"
             @click="openPaymentModal(order.tableId)"
           >
-            {{ getPaymentActionLabel(order.tableId) }}
+            {{ getPaymentActionLabel(order) }}
           </button>
 
           <button
@@ -245,7 +250,12 @@
           >
             {{ getStatusEmoji(order.status) }} {{ nextLabel(order.status) }}
           </button>
-        </article>
+
+            </article>
+          </div>
+
+          <div v-else class="lane-empty">No hay comandas aquí</div>
+        </section>
 
         <div v-if="paginatedOrders.length === 0" class="empty-orders compact-empty">
           <span>Sin pedidos</span>
@@ -446,16 +456,15 @@ const handleLogout = async () => {
   router.replace('/login')
 }
 
-const isPaymentRequested = (tableId: string) =>
-  orders.value.some((order) => order.tableId === tableId && order.paymentRequested)
+const isPaymentRequested = (order: OrderRecord) =>
+  order.status === 'DELIVERED' && Boolean(order.paymentRequested)
 
-const getPaymentMethod = (tableId: string) =>
-  orders.value.find((order) => order.tableId === tableId && order.paymentRequested)?.paymentMethod
-    ?? tables.value.find((table) => table.id === tableId)?.paymentMethod
+const getPaymentMethod = (order: OrderRecord) =>
+  order.paymentMethod
     ?? 'tarjeta'
 
-const getPaymentActionLabel = (tableId: string) =>
-  getPaymentMethod(tableId) === 'tarjeta' ? 'Cobrar con tarjeta' : 'Cobrar en efectivo'
+const getPaymentActionLabel = (order: OrderRecord) =>
+  getPaymentMethod(order) === 'tarjeta' ? 'Cobrar con tarjeta' : 'Cobrar en efectivo'
 
 const mergeOrderItems = (ordersToMerge: OrderRecord[]) => {
   const mergedMap = new Map<string, { key: string; productId: string; name: string; price: number; quantity: number; subtotal: number }>()
@@ -488,14 +497,8 @@ const mergeOrderItems = (ordersToMerge: OrderRecord[]) => {
 const mergePaymentRequestedOrders = (sourceOrders: OrderRecord[]) => {
   const merged: OrderRecord[] = []
   const tableGroups = new Map<string, OrderRecord[]>()
-  const requestedTables = new Set(
-    tables.value
-      .filter((table) => table.paymentRequested)
-      .map((table) => table.id),
-  )
-
   sourceOrders.forEach((order) => {
-    if (order.paymentRequested || requestedTables.has(order.tableId)) {
+    if (order.paymentRequested && order.status === 'DELIVERED') {
       const group = tableGroups.get(order.tableId) ?? []
       group.push(order)
       tableGroups.set(order.tableId, group)
@@ -528,12 +531,9 @@ const mergePaymentRequestedOrders = (sourceOrders: OrderRecord[]) => {
   return merged.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 }
 
-const selectedFilter = ref<'all' | 'PENDING' | 'PREPARING' | 'READY'>('all')
-
 const visibleOrders = computed(() => {
   const filtered = orders.value
     .filter((order) => order.status !== 'PAID' && order.status !== 'CANCELLED')
-    .filter((order) => selectedFilter.value === 'all' || order.status === selectedFilter.value)
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 
   return mergePaymentRequestedOrders(filtered)
@@ -546,6 +546,15 @@ const paginatedOrders = computed(() => {
   const start = (currentPage.value - 1) * pageSize
   return visibleOrders.value.slice(start, start + pageSize)
 })
+
+const orderLanes = [
+  { key: 'PENDING', kicker: '01', title: 'Nuevos', statuses: ['PENDING'] as OrderRecord['status'][] },
+  { key: 'PREPARING', kicker: '02', title: 'En preparación', statuses: ['PREPARING'] as OrderRecord['status'][] },
+  { key: 'READY', kicker: '03', title: 'Listos', statuses: ['READY', 'DELIVERED'] as OrderRecord['status'][] },
+]
+
+const ordersForLane = (statuses: OrderRecord['status'][]) =>
+  paginatedOrders.value.filter((order) => statuses.includes(order.status))
 
 const paginationStart = computed(() => (currentPage.value - 1) * pageSize + 1)
 const paginationEnd = computed(() => Math.min(currentPage.value * pageSize, visibleOrders.value.length))
@@ -604,6 +613,7 @@ const getStatusEmoji = (status: OrderRecord['status']) => {
   if (status === 'READY') return '✅'
   return '🚀'
 }
+
 </script>
 
 <style scoped>
@@ -785,6 +795,7 @@ const getStatusEmoji = (status: OrderRecord['status']) => {
   scrollbar-width: none;
   -ms-overflow-style: none;
   min-width: 0;
+  min-height: 0;
 }
 
 .content::-webkit-scrollbar {
@@ -944,13 +955,87 @@ const getStatusEmoji = (status: OrderRecord['status']) => {
 }
 
 /* ==================== ORDERS GRID ==================== */
-.orders-grid {
+.orders-board {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
-  gap: 24px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
   flex: 1;
   align-content: start;
   min-width: 0;
+  padding-bottom: 12px;
+}
+
+.order-lane {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid #dbe4ee;
+  border-top: 4px solid #f59e0b;
+  border-radius: 16px;
+  background: #f8fafc;
+}
+
+.order-lane.preparing {
+  border-top-color: #3b82f6;
+}
+
+.order-lane.ready {
+  border-top-color: #22c55e;
+}
+
+.lane-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 58px;
+  padding: 2px 4px 12px;
+}
+
+.lane-kicker {
+  display: block;
+  margin-bottom: 3px;
+  color: #94a3b8;
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+}
+
+.lane-header h2 {
+  margin: 0;
+  color: #172033;
+  font-size: 1rem;
+  font-weight: 850;
+}
+
+.lane-count {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: #fff;
+  color: #172033;
+  font-size: 0.9rem;
+  font-weight: 900;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+}
+
+.lane-orders {
+  display: grid;
+  gap: 14px;
+}
+
+.lane-empty {
+  display: grid;
+  place-items: center;
+  min-height: 110px;
+  padding: 18px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 12px;
+  color: #94a3b8;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-align: center;
 }
 
 .order-card {
@@ -963,6 +1048,8 @@ const getStatusEmoji = (status: OrderRecord['status']) => {
   animation: cardSlideIn 0.4s ease;
   position: relative;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 @keyframes cardSlideIn {
@@ -982,7 +1069,9 @@ const getStatusEmoji = (status: OrderRecord['status']) => {
 }
 
 .card-status-bar {
-  height: 4px;
+  width: 100%;
+  min-height: 5px;
+  height: 5px;
   background: #f59e0b;
 }
 
@@ -999,7 +1088,7 @@ const getStatusEmoji = (status: OrderRecord['status']) => {
 }
 
 .order-card > * {
-  padding: 0 22px;
+  padding: 0 18px;
 }
 
 .order-card > *:first-of-type {
@@ -1008,11 +1097,20 @@ const getStatusEmoji = (status: OrderRecord['status']) => {
 
 .card-header {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
+  flex-direction: column;
   padding-top: 20px !important;
   padding-bottom: 10px !important;
-  gap: 12px;
+  gap: 8px;
+}
+
+.card-header-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
 }
 
 .table-badge {
@@ -1054,7 +1152,7 @@ const getStatusEmoji = (status: OrderRecord['status']) => {
   padding-bottom: 14px !important;
   background: #f8fafc;
   border-radius: 10px;
-  margin: 0 22px 14px;
+  margin: 0 18px 14px;
   padding: 14px !important;
 }
 
@@ -1112,6 +1210,9 @@ const getStatusEmoji = (status: OrderRecord['status']) => {
 }
 
 .rejected-order-status {
+  width: auto;
+  margin: 10px 18px 14px;
+  border-radius: 12px;
   background: #fff1f2;
   border: 1px solid #fecaca;
   color: #b91c1c;
@@ -1267,10 +1368,12 @@ const getStatusEmoji = (status: OrderRecord['status']) => {
 }
 
 .status-btn {
-  width: calc(100% + 44px);
-  margin: 0 -22px;
+  width: auto;
+  margin: 10px 18px 14px;
+  align-self: stretch;
+  border-radius: 12px;
   min-height: 52px;
-  padding: 14px 22px;
+  padding: 14px 12px;
   border: none;
   background: #f59e0b;
   color: white;
@@ -1436,8 +1539,8 @@ const getStatusEmoji = (status: OrderRecord['status']) => {
 
 /* ==================== RESPONSIVE ==================== */
 @media (max-width: 1200px) {
-  .orders-grid {
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+  .orders-board {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .topbar {
@@ -1458,6 +1561,8 @@ const getStatusEmoji = (status: OrderRecord['status']) => {
 @media (max-width: 768px) {
   .pos-layout {
     grid-template-columns: 1fr;
+    height: 100dvh;
+    min-height: 100dvh;
   }
 
   .sidebar {
@@ -1536,12 +1641,14 @@ const getStatusEmoji = (status: OrderRecord['status']) => {
     overflow-wrap: anywhere;
   }
 
-  .orders-grid {
+  .orders-board {
     grid-template-columns: 1fr;
   }
 
   .content {
     padding: 14px 12px 28px;
+    min-height: 0;
+    overflow-y: auto;
   }
 
   .pagination {
@@ -1605,6 +1712,14 @@ const getStatusEmoji = (status: OrderRecord['status']) => {
 
   .order-card {
     border-radius: 15px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .card-status-bar {
+    width: 100%;
+    min-height: 4px;
+    height: 4px;
   }
 
   .card-header {
@@ -1613,6 +1728,11 @@ const getStatusEmoji = (status: OrderRecord['status']) => {
     gap: 7px;
     padding-top: 16px !important;
     padding-bottom: 8px !important;
+  }
+
+  .card-header-meta {
+    width: 100%;
+    justify-content: space-between;
   }
 
   .order-id {
@@ -1639,9 +1759,16 @@ const getStatusEmoji = (status: OrderRecord['status']) => {
 
   .status-btn {
     width: calc(100% + 32px);
-    margin-inline: -16px;
+    margin: 0 -16px;
+    border-radius: 0;
     min-height: 50px;
     padding-inline: 16px;
+  }
+
+  .rejected-order-status {
+    width: calc(100% + 32px);
+    margin: 0 -16px;
+    border-radius: 0;
   }
 
   .card-items {
@@ -1658,7 +1785,7 @@ const getStatusEmoji = (status: OrderRecord['status']) => {
     padding-bottom: 12px !important;
   }
 
-  .orders-grid {
+  .orders-board {
     gap: 16px;
   }
 

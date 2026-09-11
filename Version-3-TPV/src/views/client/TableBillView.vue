@@ -436,7 +436,7 @@ h1 {
 }
 
 .totals-box {
-  background: #102a43;
+  background: linear-gradient(135deg, #e85d04 0%, #c2410c 100%);
   color: white;
   border-radius: 16px;
   padding: 16px;
@@ -590,7 +590,7 @@ button {
 }
 
 :global(body.dark-mode) .totals-box {
-  background: #0f2130;
+  background: linear-gradient(135deg, #c2410c 0%, #9a3412 100%);
   border: 1px solid var(--border);
 }
 

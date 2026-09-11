@@ -241,6 +241,7 @@ const getOrderNumber = (orderId: string) => {
   overflow-x: hidden;
   background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
   padding: 30px 20px;
+  box-sizing: border-box;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
   scrollbar-width: none;
   -ms-overflow-style: none;
@@ -260,6 +261,7 @@ const getOrderNumber = (orderId: string) => {
   margin-bottom: 32px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
   gap: 40px;
+  min-width: 0;
 }
 
 .eyebrow {
@@ -322,6 +324,8 @@ const getOrderNumber = (orderId: string) => {
 .header-stats {
   display: flex;
   gap: 20px;
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
 .header-stat {
@@ -364,6 +368,7 @@ const getOrderNumber = (orderId: string) => {
   grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
   gap: 24px;
   margin-bottom: 40px;
+  min-width: 0;
 }
 
 .kanban-column {
@@ -376,6 +381,7 @@ const getOrderNumber = (orderId: string) => {
   overflow: hidden;
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.1);
+  min-width: 0;
 }
 
 .column-header {
@@ -520,6 +526,7 @@ const getOrderNumber = (orderId: string) => {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  min-width: 0;
 }
 
 .table-badge {
@@ -588,6 +595,7 @@ const getOrderNumber = (orderId: string) => {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+  min-width: 0;
 }
 
 .order-item-line.rejected {
@@ -614,6 +622,7 @@ const getOrderNumber = (orderId: string) => {
   cursor: pointer;
   font-size: 0.7rem;
   font-weight: 800;
+  min-height: 32px;
 }
 
 .rejection-modal-overlay {
@@ -807,30 +816,165 @@ const getOrderNumber = (orderId: string) => {
   transform: scale(1.02);
 }
 
-@media (max-width: 1024px) {
+@media (max-width: 1100px) {
+  .kitchen-screen {
+    padding: 22px 16px 32px;
+  }
+
   .kitchen-header {
     flex-direction: column;
     gap: 20px;
+    align-items: stretch;
+    padding: 26px 24px;
+    text-align: center;
+  }
+
+  .header-stats {
+    align-self: center;
+  }
+
+  .logout-btn {
+    align-self: center;
   }
 
   .kanban-board {
     grid-template-columns: 1fr;
+    gap: 18px;
+  }
+
+  .kanban-column {
+    max-height: none;
+  }
+
+  .tickets-container {
+    max-height: none;
+    overflow: visible;
   }
 }
 
 @media (max-width: 640px) {
+  .kitchen-screen {
+    padding: 10px 10px 24px;
+  }
+
+  .kitchen-header {
+    padding: 20px 16px;
+    margin-bottom: 18px;
+    border-radius: 14px;
+  }
+
   .kitchen-header h1 {
-    font-size: 1.5rem;
+    font-size: clamp(1.45rem, 7vw, 1.9rem);
+    line-height: 1.1;
+    overflow-wrap: anywhere;
+  }
+
+  .subtitle {
+    line-height: 1.4;
   }
 
   .header-stats {
-    gap: 10px;
+    width: 100%;
+    gap: 8px;
+    justify-content: space-between;
+  }
+
+  .header-stat {
+    flex: 1 1 0;
   }
 
   .stat-badge {
     width: 40px;
     height: 40px;
     font-size: 1.2rem;
+  }
+
+  .header-stat p {
+    margin-top: 5px;
+    font-size: 0.72rem;
+  }
+
+  .logout-btn {
+    width: 100%;
+    min-height: 44px;
+  }
+
+  .column-header {
+    padding: 15px 14px;
+  }
+
+  .column-header h2 {
+    font-size: 0.98rem;
+  }
+
+  .tickets-container {
+    padding: 10px;
+    gap: 10px;
+  }
+
+  .ticket {
+    padding: 13px;
+    border-radius: 10px;
+  }
+
+  .ticket-header {
+    gap: 10px;
+  }
+
+  .table-badge,
+  .order-number {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  .time {
+    flex: 0 0 auto;
+    font-size: 0.75rem;
+  }
+
+  .order-item-line {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .reject-item-btn {
+    width: 100%;
+    min-height: 38px;
+  }
+
+  .action-btn {
+    min-height: 44px;
+    padding: 11px 10px;
+  }
+
+  .rejection-modal-overlay {
+    padding: 10px;
+  }
+
+  .rejection-modal {
+    max-height: calc(100vh - 20px);
+    overflow-y: auto;
+    padding: 22px 16px 16px;
+    border-radius: 16px;
+  }
+
+  .rejection-actions {
+    flex-direction: column-reverse;
+  }
+
+  .rejection-cancel,
+  .rejection-confirm {
+    width: 100%;
+    min-height: 44px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kitchen-screen *,
+  .kitchen-screen *::before,
+  .kitchen-screen *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
   }
 }
 </style>

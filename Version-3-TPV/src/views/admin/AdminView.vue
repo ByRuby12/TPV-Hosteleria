@@ -746,6 +746,21 @@
         </div>
       </div>
 
+      <div v-else-if="selectedModule === 'support'" class="management-card support-card">
+        <div class="support-card-icon" aria-hidden="true">✉️</div>
+        <div class="support-card-content">
+          <p class="support-eyebrow">Soporte técnico</p>
+          <h3>¿Necesitas ayuda con el TPV?</h3>
+          <p>Para cualquier incidencia o consulta, contacta con ByRuby12.</p>
+          <div class="support-details">
+            <strong>ByRuby12</strong>
+            <a href="mailto:byruby12.contacto@gmail.com">byruby12.contacto@gmail.com</a>
+            <span>Lunes a viernes · 10:00 a 18:00</span>
+          </div>
+          <a class="ghost-btn support-email-button" href="mailto:byruby12.contacto@gmail.com">Contactar por correo</a>
+        </div>
+      </div>
+
       <div v-else-if="selectedModule === 'suppliers'" class="management-card">
         <div class="supplier-form">
           <div class="form-header">
@@ -835,6 +850,7 @@ const modules = [
   { key: 'users', icon: '👨‍💼', title: 'Usuarios', description: 'Gestiona roles del personal.', label: 'Administrar Usuarios' },
   { key: 'company', icon: '🏪', title: 'Empresa', description: 'Configura nombre, contacto y redes del restaurante.', label: 'Configurar Empresa' },
   { key: 'gallery', icon: '🖼️', title: 'Galería de imágenes', description: 'Sube, elimina y reutiliza imágenes del restaurante.', label: 'Administrar imágenes' },
+  { key: 'support', icon: '🛠️', title: 'Contacto y soporte técnico', description: 'Contacta con ByRuby12 para resolver incidencias.', label: 'Ver contacto de soporte' },
   { key: 'suppliers', icon: '🚚', title: 'Proveedores', description: 'Consulta empresas, productos y ubicaciones de suministro.', label: 'Administrar Proveedores' },
   { key: 'payment-history', icon: '💰', title: 'Historial de Pagos', description: 'Visualiza el registro de todas las transacciones.', label: 'Ver Historial' },
   { key: 'cash-register', icon: '🧾', title: 'Caja', description: 'Abre, controla y cierra la caja diaria.', label: 'Gestionar Caja' },
@@ -961,7 +977,7 @@ onMounted(async () => {
   await seedExampleGalleryUrls()
 })
 
-const selectedModule = ref<'categories' | 'products' | 'tables' | 'users' | 'company' | 'gallery' | 'suppliers' | 'payment-history' | 'cash-register' | 'data-management' | 'statistics'>('tables')
+const selectedModule = ref<'categories' | 'products' | 'tables' | 'users' | 'company' | 'gallery' | 'support' | 'suppliers' | 'payment-history' | 'cash-register' | 'data-management' | 'statistics'>('tables')
 const selectedChart = ref<'daily' | 'weekly' | 'monthly' | 'yearly'>('daily')
 const companyForm = ref({
   restaurantName: '',
@@ -1595,7 +1611,7 @@ const cardTodayTotal = computed(() => {
     .reduce((sum, order) => sum + (order.total || 0), 0)
 })
 
-const selectModule = (key: 'categories' | 'products' | 'tables' | 'users' | 'company' | 'gallery' | 'suppliers' | 'payment-history' | 'cash-register' | 'data-management' | 'statistics') => {
+const selectModule = (key: 'categories' | 'products' | 'tables' | 'users' | 'company' | 'gallery' | 'support' | 'suppliers' | 'payment-history' | 'cash-register' | 'data-management' | 'statistics') => {
   selectedModule.value = key
 }
 
@@ -2684,6 +2700,77 @@ h1 {
   background: transparent;
   border-radius: 0;
   padding: 0;
+}
+
+.support-card {
+  display: flex;
+  max-width: 680px;
+  align-items: flex-start;
+  gap: 18px;
+  padding: 24px;
+  border: 1px solid rgba(249, 115, 22, 0.28);
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(124, 45, 18, 0.32), rgba(30, 41, 59, 0.76));
+}
+
+.support-card-icon {
+  display: grid;
+  width: 52px;
+  height: 52px;
+  flex: 0 0 52px;
+  place-items: center;
+  border-radius: 14px;
+  background: rgba(249, 115, 22, 0.18);
+  font-size: 1.5rem;
+}
+
+.support-card-content {
+  min-width: 0;
+}
+
+.support-eyebrow {
+  margin: 0 0 5px;
+  color: #fb923c;
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.support-card h3 {
+  margin: 0;
+  color: #fff;
+  font-size: 1.25rem;
+}
+
+.support-card-content > p:not(.support-eyebrow) {
+  margin: 8px 0 16px;
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.5;
+}
+
+.support-details {
+  display: grid;
+  gap: 5px;
+  margin-bottom: 18px;
+  color: rgba(255, 255, 255, 0.72);
+  overflow-wrap: anywhere;
+}
+
+.support-details strong {
+  color: #fff;
+  font-size: 1rem;
+}
+
+.support-details a {
+  color: #fdba74;
+  font-weight: 700;
+}
+
+.support-email-button {
+  display: inline-flex;
+  width: auto;
+  text-decoration: none;
 }
 
 .gallery-admin-grid {
@@ -4099,6 +4186,23 @@ h1 {
   .management-panel {
     padding: 18px 14px;
     border-radius: 16px;
+  }
+
+  .support-card {
+    flex-direction: column;
+    gap: 14px;
+    padding: 18px;
+  }
+
+  .support-card-icon {
+    width: 44px;
+    height: 44px;
+    flex-basis: 44px;
+  }
+
+  .support-email-button {
+    width: 100%;
+    justify-content: center;
   }
 
   .panel-header {

@@ -109,6 +109,8 @@ const handleLogin = async () => {
   display: grid;
   place-items: center;
   padding: 24px;
+  box-sizing: border-box;
+  overflow-y: auto;
   background:
     radial-gradient(circle at top, rgba(180, 83, 9, 0.12), transparent 30%),
     linear-gradient(135deg, #1f2937 0%, #111827 100%);
@@ -116,6 +118,7 @@ const handleLogin = async () => {
 
 .login-panel {
   width: min(100%, 460px);
+  box-sizing: border-box;
   background: rgba(255, 255, 255, 0.96);
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 28px;
@@ -154,6 +157,7 @@ const handleLogin = async () => {
   margin: 6px 0 0;
   font-size: clamp(1.5rem, 3vw, 2rem);
   color: #111827;
+  overflow-wrap: anywhere;
 }
 
 .welcome-copy {
@@ -192,6 +196,8 @@ const handleLogin = async () => {
   flex-direction: column;
   align-items: center;
   gap: 4px;
+  min-height: 76px;
+  overflow-wrap: anywhere;
 }
 
 .role-tab.active {
@@ -218,6 +224,8 @@ label {
 }
 
 input {
+  width: 100%;
+  box-sizing: border-box;
   border: 1px solid #d1d5db;
   border-radius: 12px;
   padding: 12px 14px;
@@ -241,6 +249,7 @@ button {
   font-weight: 800;
   padding: 13px 16px;
   cursor: pointer;
+  min-height: 46px;
   transition: filter 0.2s ease, transform 0.2s ease;
 }
 
@@ -261,12 +270,98 @@ button:disabled {
 }
 
 @media (max-width: 520px) {
+  .login-page {
+    align-items: start;
+    padding: 14px 10px;
+  }
+
   .login-panel {
+    margin: auto 0;
     padding: 22px 18px 18px;
+    border-radius: 20px;
+  }
+
+  .brand-block {
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .brand-badge {
+    width: 46px;
+    height: 46px;
+    border-radius: 13px;
+    font-size: 1.35rem;
+  }
+
+  .welcome-copy {
+    margin-bottom: 16px;
+  }
+
+  .welcome-copy h2 {
+    font-size: 1.45rem;
+  }
+
+  .welcome-copy p {
+    font-size: 0.88rem;
+    line-height: 1.45;
   }
 
   .role-tabs {
     grid-template-columns: 1fr;
+    gap: 7px;
+  }
+
+  .role-tab {
+    min-height: 54px;
+    flex-direction: row;
+    justify-content: flex-start;
+    padding: 10px 14px;
+    text-align: left;
+  }
+
+  .tab-icon {
+    width: 28px;
+    text-align: center;
+  }
+
+  input {
+    min-height: 48px;
+    font-size: 16px;
+  }
+
+  .login-form > button {
+    min-height: 50px;
+  }
+}
+
+@media (max-width: 360px) {
+  .login-page {
+    padding: 8px;
+  }
+
+  .login-panel {
+    padding: 18px 14px 14px;
+  }
+
+  .brand-block h1 {
+    font-size: 1.35rem;
+  }
+
+  .eyebrow {
+    font-size: 0.66rem;
+  }
+
+  .welcome-copy h2 {
+    font-size: 1.3rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-panel *,
+  .login-panel *::before,
+  .login-panel *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
   }
 }
 </style>

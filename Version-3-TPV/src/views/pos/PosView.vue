@@ -1409,24 +1409,71 @@ const getStatusEmoji = (status: OrderRecord['status']) => {
 
   .sidebar {
     height: auto;
-    max-height: 200px;
+    max-height: 184px;
     border-bottom: 2px solid rgba(0, 0, 0, 0.1);
   }
 
+  .sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 16px 10px;
+  }
+
+  .sidebar-header h2 {
+    margin: 0;
+    font-size: 1.05rem;
+  }
+
   .tables-list {
-    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-    max-height: 120px;
-    padding: 10px;
-    gap: 8px;
+    display: flex;
+    grid-template-columns: none;
+    max-height: 112px;
+    padding: 8px 12px 12px;
+    gap: 10px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x proximity;
   }
 
   .table-card {
+    flex: 0 0 82px;
+    min-height: 82px;
     flex-direction: column;
-    padding: 10px;
+    justify-content: center;
+    gap: 5px;
+    padding: 8px 6px;
     text-align: center;
+    border-radius: 14px;
+    scroll-snap-align: start;
   }
 
   .table-info {
+    min-width: 0;
+  }
+
+  .table-name {
+    margin: 0;
+    font-size: 0.72rem;
+    line-height: 1.1;
+  }
+
+  .table-status {
+    margin-top: 3px;
+    font-size: 0.65rem;
+    line-height: 1;
+    white-space: nowrap;
+  }
+
+  .table-number {
+    width: 36px;
+    height: 36px;
+    border-radius: 11px;
+    font-size: 1rem;
+  }
+
+  .sidebar-footer {
     display: none;
   }
 

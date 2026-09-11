@@ -1,6 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { getRoleLandingRoute, useAuthStore } from '../stores/authStore'
-import HomeView from '../views/client/HomeView.vue'
 import CartView from '../views/client/CartView.vue'
 import ConfirmOrderView from '../views/client/ConfirmOrderView.vue'
 import OrderSentView from '../views/client/OrderSentView.vue'
@@ -18,7 +17,7 @@ const authStore = useAuthStore()
 const router = createRouter({
   history: createWebHistory(),
   routes: [
-    { path: '/', name: 'home', component: HomeView },
+    { path: '/', redirect: '/login' },
     { path: '/carrito', name: 'cart', component: CartView },
     { path: '/confirmar', name: 'confirm-order', component: ConfirmOrderView },
     { path: '/pedido/confirmado', name: 'order-sent', component: OrderSentView },

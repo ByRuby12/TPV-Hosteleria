@@ -262,7 +262,8 @@ const normalizeProductImage = (value?: string) => {
   if (!value) return ''
   if (value.startsWith('http://') || value.startsWith('https://')) return value
   const assetPath = value.replace(/^\.\//, '').replace(/^\//, '')
-  return `${import.meta.env.BASE_URL}${assetPath}`
+  const publicBase = import.meta.env.DEV ? '/' : import.meta.env.BASE_URL
+  return `${publicBase}${assetPath}`
 }
 
 const productImageStyle = (product: any) => {
@@ -430,16 +431,16 @@ const heroBannerStyle = computed(() => {
   }
 })
 
-const galleryImages = [
-  `${import.meta.env.BASE_URL}images/imagen1.jpg`,
-  `${import.meta.env.BASE_URL}images/banner-bar.jpeg`,
-  `${import.meta.env.BASE_URL}images/logo-bar.png`,
-  `${import.meta.env.BASE_URL}images/icono_web.png`,
-]
+const galleryImages = ref([
+  `${import.meta.env.DEV ? '/' : import.meta.env.BASE_URL}images/imagen1.jpg`,
+  `${import.meta.env.DEV ? '/' : import.meta.env.BASE_URL}images/banner-bar.jpeg`,
+  `${import.meta.env.DEV ? '/' : import.meta.env.BASE_URL}images/logo-bar.png`,
+  `${import.meta.env.DEV ? '/' : import.meta.env.BASE_URL}images/icono_web.png`,
+])
 
 const visibleCategories = computed(() => [
   ...categories.value,
-  { id: 'gallery', name: uiText.value.galleryCategory },
+  ...(galleryImages.value.length ? [{ id: 'gallery', name: uiText.value.galleryCategory }] : []),
   { id: 'contact', name: uiText.value.contactCategory },
 ])
 
@@ -526,6 +527,22 @@ const toggleLanguage = async () => {
   ])
 }
 
+const hydrateGallery = async () => {
+  if (!db) return
+
+  try {
+    const uploadedImages = await getCollectionSnapshot<any>('galleryImages')
+    const uploadedUrls = uploadedImages
+      .sort((left, right) => String(left.createdAt || '').localeCompare(String(right.createdAt || '')))
+      .map((image) => image.url)
+      .filter(Boolean)
+
+    galleryImages.value = [...galleryImages.value, ...uploadedUrls]
+  } catch (error) {
+    console.warn('No se pudo cargar la galería de imágenes.', error)
+  }
+}
+
 onMounted(async () => {
   const storedLang = localStorage.getItem('tpv-client-lang')
 
@@ -534,6 +551,7 @@ onMounted(async () => {
   await Promise.all([
     hydrateClientCatalog(currentLang.value),
     loadSettings(currentLang.value),
+    hydrateGallery(),
   ])
 })
 

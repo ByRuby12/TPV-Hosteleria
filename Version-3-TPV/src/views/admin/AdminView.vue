@@ -148,6 +148,10 @@
             <label class="field-block field-block-wide">
               <span>Imagen</span>
               <input v-model="newProductImage" placeholder="URL de la imagen del producto" />
+              <select class="gallery-image-select" aria-label="Elegir imagen de la galería" @change="newProductImage = selectedGalleryUrl($event)">
+                <option value="">Elegir desde la galería...</option>
+                <option v-for="image in galleryImages" :key="image.id" :value="image.url">{{ image.name }}</option>
+              </select>
             </label>
 
             <div class="allergen-field field-block-wide">
@@ -232,6 +236,10 @@
                 <label class="field-block field-block-wide">
                   <span>Imagen</span>
                   <input v-model="editingProduct.image" placeholder="URL imagen del producto" class="edit-input" />
+                  <select class="gallery-image-select" aria-label="Elegir imagen de la galería" @change="editingProduct.image = selectedGalleryUrl($event)">
+                    <option value="">Elegir desde la galería...</option>
+                    <option v-for="image in galleryImages" :key="image.id" :value="image.url">{{ image.name }}</option>
+                  </select>
                 </label>
 
                 <div class="allergen-field field-block-wide">
@@ -549,12 +557,20 @@
 
       <div v-else-if="selectedModule === 'company'" class="management-card">
         <div class="company-settings-form">
+          <div class="company-section-heading">
+            <span>01</span>
+            <div><h3>Identidad del restaurante</h3><p>La información principal que verá el cliente.</p></div>
+          </div>
           <div class="field-group">
             <label>Nombre del restaurante</label>
             <input v-model="companyForm.restaurantName" placeholder="Ej: Le Petit Bistro" />
           </div>
 
           <div class="field-grid two-columns">
+            <div class="company-section-heading company-section-heading-wide">
+              <span>02</span>
+              <div><h3>Datos fiscales</h3><p>Se utilizarán en las facturas.</p></div>
+            </div>
             <div class="field-group">
               <label>Razón social para facturas</label>
               <input v-model="companyForm.legalName" placeholder="Ej: Le Petit Bistro S.L." />
@@ -566,6 +582,10 @@
           </div>
 
           <div class="field-group">
+            <div class="company-section-heading">
+              <span>03</span>
+              <div><h3>Contacto y ubicación</h3><p>Facilita al cliente cómo encontrarte y contactarte.</p></div>
+            </div>
             <label>Dirección</label>
             <input v-model="companyForm.address" placeholder="Ej: Calle Mayor 123, Madrid" />
           </div>
@@ -591,6 +611,10 @@
           </div>
 
           <div class="field-grid two-columns">
+            <div class="company-section-heading company-section-heading-wide">
+              <span>04</span>
+              <div><h3>Identidad visual</h3><p>Selecciona imágenes de la galería o pega una URL.</p></div>
+            </div>
             <div class="field-group">
               <label>Teléfono</label>
               <input v-model="companyForm.phone" placeholder="Ej: +34 600 000 000" />
@@ -610,14 +634,34 @@
             <div class="field-group">
               <label>Logo del restaurante</label>
               <input v-model="companyForm.logoImage" placeholder="URL o ruta de imagen para el logo" />
+              <select class="gallery-image-select" aria-label="Elegir logo desde la galería" @change="companyForm.logoImage = selectedGalleryUrl($event)">
+                <option value="">Elegir desde la galería...</option>
+                <option v-for="image in galleryImages" :key="image.id" :value="image.url">{{ image.name }}</option>
+              </select>
+              <div v-if="companyForm.logoImage" class="company-image-preview logo-preview">
+                <img :src="normalizeAdminImage(companyForm.logoImage)" alt="Vista previa del logo" />
+                <button class="chip" type="button" @click="companyForm.logoImage = ''">Quitar selección</button>
+              </div>
             </div>
             <div class="field-group">
               <label>Banner principal</label>
               <input v-model="companyForm.bannerImage" placeholder="URL o ruta de imagen para el banner" />
+              <select class="gallery-image-select" aria-label="Elegir banner desde la galería" @change="companyForm.bannerImage = selectedGalleryUrl($event)">
+                <option value="">Elegir desde la galería...</option>
+                <option v-for="image in galleryImages" :key="image.id" :value="image.url">{{ image.name }}</option>
+              </select>
+              <div v-if="companyForm.bannerImage" class="company-image-preview banner-preview">
+                <img :src="normalizeAdminImage(companyForm.bannerImage)" alt="Vista previa del banner" />
+                <button class="chip" type="button" @click="companyForm.bannerImage = ''">Quitar selección</button>
+              </div>
             </div>
           </div>
 
           <div class="field-grid two-columns">
+            <div class="company-section-heading company-section-heading-wide">
+              <span>05</span>
+              <div><h3>Redes sociales</h3><p>Conecta los perfiles públicos del restaurante.</p></div>
+            </div>
             <div class="field-group">
               <label>Instagram</label>
               <input v-model="companyForm.instagram" placeholder="https://instagram.com/..." />
@@ -652,6 +696,41 @@
           <div class="form-actions">
             <button class="ghost-btn" @click="saveCompanyProfile">Guardar información</button>
           </div>
+        </div>
+      </div>
+
+      <div v-else-if="selectedModule === 'gallery'" class="management-card gallery-admin-card">
+        <div class="product-create-form">
+          <div class="form-header">
+            <h3>Biblioteca de imágenes</h3>
+            <p>Sube imágenes una a una y reutiliza sus URLs en productos, banner o logo.</p>
+          </div>
+          <label class="upload-dropzone">
+            <span>Seleccionar imagen</span>
+            <small>JPG, PNG o WEBP · máximo 5 MB</small>
+            <input type="file" accept="image/jpeg,image/png,image/webp" @change="uploadGalleryImage" />
+          </label>
+          <p v-if="galleryFeedback" class="field-hint">{{ galleryFeedback }}</p>
+        </div>
+        <div v-if="uploadedGalleryImages.length" class="gallery-admin-grid">
+          <article v-for="image in paginatedGalleryImages" :key="image.id" class="gallery-admin-item">
+            <img :src="image.url" :alt="image.name" />
+            <div class="gallery-admin-item-info">
+              <strong>{{ image.name }}</strong>
+              <div class="product-actions">
+                <button class="chip" type="button" @click="copyGalleryUrl(image.url)">Copiar URL</button>
+                <button v-if="image.storagePath" class="danger-btn" type="button" :disabled="galleryDeletingId === image.id" @click="removeGalleryImage(image)">
+                  {{ galleryDeletingId === image.id ? 'Eliminando...' : 'Eliminar foto' }}
+                </button>
+              </div>
+            </div>
+          </article>
+        </div>
+        <p v-else class="history-empty">Todavía no hay imágenes subidas. Las imágenes locales están disponibles en los selectores de Productos y Empresa.</p>
+        <div v-if="galleryPageCount > 1" class="gallery-pagination">
+          <button class="chip" type="button" :disabled="galleryPage === 1" @click="galleryPage--">Anterior</button>
+          <span>Página {{ galleryPage }} de {{ galleryPageCount }}</span>
+          <button class="chip" type="button" :disabled="galleryPage === galleryPageCount" @click="galleryPage++">Siguiente</button>
         </div>
       </div>
 
@@ -705,7 +784,8 @@ import { computed, ref, watch, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import QRCode from 'qrcode'
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, LineController, Title, Tooltip, Legend, Filler } from 'chart.js'
-import { db } from '../../lib/firebase'
+import { db, storage } from '../../lib/firebase'
+import { deleteObject, getDownloadURL, ref as storageRef, uploadBytes } from 'firebase/storage'
 import { createDocument, deleteDocument, getCollectionSnapshot, getDocumentById, upsertDocument } from '../../services/firebase/firestore'
 import { useAuthStore } from '../../stores/authStore'
 import { useCompanySettings } from '../../stores/companySettings'
@@ -743,6 +823,7 @@ const modules = [
   { key: 'tables', icon: '🪑', title: 'Mesas', description: 'Activa o libera mesas del salón.', label: 'Administrar Mesas' },
   { key: 'users', icon: '👨‍💼', title: 'Usuarios', description: 'Gestiona roles del personal.', label: 'Administrar Usuarios' },
   { key: 'company', icon: '🏪', title: 'Empresa', description: 'Configura nombre, contacto y redes del restaurante.', label: 'Configurar Empresa' },
+  { key: 'gallery', icon: '🖼️', title: 'Galería de imágenes', description: 'Sube, elimina y reutiliza imágenes del restaurante.', label: 'Administrar imágenes' },
   { key: 'suppliers', icon: '🚚', title: 'Proveedores', description: 'Consulta empresas, productos y ubicaciones de suministro.', label: 'Administrar Proveedores' },
   { key: 'payment-history', icon: '💰', title: 'Historial de Pagos', description: 'Visualiza el registro de todas las transacciones.', label: 'Ver Historial' },
   { key: 'cash-register', icon: '🧾', title: 'Caja', description: 'Abre, controla y cierra la caja diaria.', label: 'Gestionar Caja' },
@@ -754,6 +835,27 @@ const categories = ref<any[]>([])
 const products = ref<any[]>([])
 const tables = ref<any[]>(storeTables.value ?? [])
 const suppliers = ref<any[]>([])
+const localGalleryImages = [
+  { id: 'local-imagen1', name: 'imagen1.jpg', url: `${import.meta.env.DEV ? '/' : import.meta.env.BASE_URL}images/imagen1.jpg` },
+  { id: 'local-banner-bar', name: 'banner-bar.jpeg', url: `${import.meta.env.DEV ? '/' : import.meta.env.BASE_URL}images/banner-bar.jpeg` },
+  { id: 'local-logo-bar', name: 'logo-bar.png', url: `${import.meta.env.DEV ? '/' : import.meta.env.BASE_URL}images/logo-bar.png` },
+  { id: 'local-icono-web', name: 'icono_web.png', url: `${import.meta.env.DEV ? '/' : import.meta.env.BASE_URL}images/icono_web.png` },
+]
+const galleryImages = ref<any[]>(localGalleryImages)
+const galleryFeedback = ref('')
+const galleryDeletingId = ref('')
+const galleryPage = ref(1)
+const galleryPageSize = 5
+const uploadedGalleryImages = computed(() => galleryImages.value.filter((image) => image.storagePath))
+const galleryPageCount = computed(() => Math.max(1, Math.ceil(uploadedGalleryImages.value.length / galleryPageSize)))
+const paginatedGalleryImages = computed(() => {
+  const start = (galleryPage.value - 1) * galleryPageSize
+  return uploadedGalleryImages.value.slice(start, start + galleryPageSize)
+})
+
+watch(galleryPageCount, (pageCount) => {
+  galleryPage.value = Math.min(galleryPage.value, pageCount)
+})
 
 const users = ref([
   { email: 'admin@restaurante.com', role: 'admin' },
@@ -765,11 +867,12 @@ const hydrateAdminData = async () => {
   if (!db) return
 
   try {
-    const [categorySnapshots, productSnapshots, tableSnapshots, supplierSnapshots] = await Promise.all([
+    const [categorySnapshots, productSnapshots, tableSnapshots, supplierSnapshots, gallerySnapshots] = await Promise.all([
       getCollectionSnapshot<any>('categories'),
       getCollectionSnapshot<any>('products'),
       getCollectionSnapshot<any>('tables'),
       getCollectionSnapshot<any>('suppliers'),
+      getCollectionSnapshot<any>('galleryImages'),
     ])
 
     if (categorySnapshots.length) {
@@ -779,6 +882,7 @@ const hydrateAdminData = async () => {
       products.value = productSnapshots
     }
     suppliers.value = supplierSnapshots
+    galleryImages.value = [...localGalleryImages, ...gallerySnapshots]
     if (tableSnapshots.length) {
       const uniqueTables = deduplicateTables(tableSnapshots)
       const uniqueIds = new Set(uniqueTables.map((table) => table.id))
@@ -827,7 +931,7 @@ onMounted(async () => {
   ])
 })
 
-const selectedModule = ref<'categories' | 'products' | 'tables' | 'users' | 'company' | 'suppliers' | 'payment-history' | 'cash-register' | 'data-management' | 'statistics'>('tables')
+const selectedModule = ref<'categories' | 'products' | 'tables' | 'users' | 'company' | 'gallery' | 'suppliers' | 'payment-history' | 'cash-register' | 'data-management' | 'statistics'>('tables')
 const selectedChart = ref<'daily' | 'weekly' | 'monthly' | 'yearly'>('daily')
 const companyForm = ref({
   restaurantName: '',
@@ -1461,8 +1565,82 @@ const cardTodayTotal = computed(() => {
     .reduce((sum, order) => sum + (order.total || 0), 0)
 })
 
-const selectModule = (key: 'categories' | 'products' | 'tables' | 'users' | 'company' | 'suppliers' | 'payment-history' | 'cash-register' | 'data-management' | 'statistics') => {
+const selectModule = (key: 'categories' | 'products' | 'tables' | 'users' | 'company' | 'gallery' | 'suppliers' | 'payment-history' | 'cash-register' | 'data-management' | 'statistics') => {
   selectedModule.value = key
+}
+
+const selectedGalleryUrl = (event: Event) => (event.target as HTMLSelectElement).value
+
+const normalizeAdminImage = (value: string) => {
+  if (!value) return ''
+  if (value.startsWith('http://') || value.startsWith('https://')) return value
+  if (value.startsWith(import.meta.env.BASE_URL)) return value
+  const publicBase = import.meta.env.DEV ? '/' : import.meta.env.BASE_URL
+  return `${publicBase}${value.replace(/^\.\//, '').replace(/^\//, '')}`
+}
+
+const uploadGalleryImage = async (event: Event) => {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  input.value = ''
+  galleryFeedback.value = ''
+
+  if (!file) return
+  if (!storage || !db) {
+    galleryFeedback.value = 'Firebase Storage no está disponible.'
+    return
+  }
+  if (!file.type.startsWith('image/')) {
+    galleryFeedback.value = 'Selecciona un archivo de imagen.'
+    return
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    galleryFeedback.value = 'La imagen no puede superar los 5 MB.'
+    return
+  }
+
+  try {
+    galleryFeedback.value = 'Subiendo imagen...'
+    const safeName = file.name.toLowerCase().replace(/[^a-z0-9.-]+/g, '-')
+    const storagePath = `images/galeria/${Date.now()}-${safeName}`
+    const imageRef = storageRef(storage, storagePath)
+    await uploadBytes(imageRef, file, { contentType: file.type })
+    const url = await getDownloadURL(imageRef)
+    const image = { name: file.name, url, storagePath, createdAt: new Date().toISOString() }
+    await upsertDocument('galleryImages', storagePath.replace(/[^a-zA-Z0-9-]/g, '-'), image)
+    galleryImages.value = [...galleryImages.value, { ...image, id: storagePath.replace(/[^a-zA-Z0-9-]/g, '-') }]
+    galleryFeedback.value = 'Imagen añadida correctamente.'
+  } catch (error) {
+    console.error('No se pudo subir la imagen de galería.', error)
+    galleryFeedback.value = 'No se pudo subir la imagen.'
+  }
+}
+
+const copyGalleryUrl = async (url: string) => {
+  await navigator.clipboard?.writeText(url)
+  galleryFeedback.value = 'URL copiada. Puedes pegarla en cualquier campo de imagen.'
+}
+
+const removeGalleryImage = async (image: any) => {
+  if (!db || !storage || !image?.storagePath) return
+  if (!window.confirm(`¿Quieres eliminar la foto "${image.name}"? Esta acción no se puede deshacer.`)) return
+
+  try {
+    galleryDeletingId.value = image.id
+    try {
+      await deleteObject(storageRef(storage, image.storagePath))
+    } catch (error: any) {
+      if (error?.code !== 'storage/object-not-found') throw error
+    }
+    await deleteDocument('galleryImages', image.id)
+    galleryImages.value = galleryImages.value.filter((item) => item.id !== image.id)
+    galleryFeedback.value = 'Imagen eliminada.'
+  } catch (error) {
+    console.error('No se pudo eliminar la imagen de galería.', error)
+    galleryFeedback.value = 'No se pudo eliminar la imagen.'
+  } finally {
+    galleryDeletingId.value = ''
+  }
 }
 
 const cashRegisterActiveTables = computed(() => new Set(cashRegisterOrders.value.map((order) => order.tableId)).size)
@@ -2454,6 +2632,73 @@ h1 {
   padding: 0;
 }
 
+.gallery-admin-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.gallery-admin-item {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.72);
+}
+
+.gallery-admin-item > img {
+  display: block;
+  width: 100%;
+  height: 108px;
+  object-fit: cover;
+}
+
+.gallery-admin-item-info {
+  display: grid;
+  gap: 8px;
+  padding: 9px;
+}
+
+.gallery-admin-item-info strong {
+  overflow: hidden;
+  color: rgba(255, 255, 255, 0.86);
+  font-size: 0.78rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gallery-admin-item-info .product-actions {
+  gap: 6px;
+}
+
+.gallery-admin-item-info .chip,
+.gallery-admin-item-info .danger-btn {
+  padding: 6px 8px;
+  font-size: 0.7rem;
+}
+
+.gallery-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 18px;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.82rem;
+}
+
+.gallery-pagination button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+@media (min-width: 720px) {
+  .gallery-admin-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
 .row {
   display: flex;
   gap: 12px;
@@ -2465,6 +2710,67 @@ h1 {
 .company-settings-form {
   display: grid;
   gap: 18px;
+}
+
+.company-section-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-top: 10px;
+  padding: 14px 0 2px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.company-section-heading-wide {
+  grid-column: 1 / -1;
+}
+
+.company-section-heading > span {
+  color: #fb923c;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.company-section-heading h3 {
+  margin: 0;
+  color: #fff;
+  font-size: 1rem;
+}
+
+.company-section-heading p {
+  margin: 3px 0 0;
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 0.78rem;
+}
+
+.company-image-preview {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+  padding: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.company-image-preview img {
+  display: block;
+  width: 58px;
+  height: 58px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.company-image-preview.banner-preview img {
+  width: 116px;
+  height: 58px;
+}
+
+.company-image-preview .chip {
+  margin-left: auto;
+  white-space: nowrap;
 }
 
 .field-group {

@@ -283,7 +283,7 @@ const getAllergenAsset = (allergen: string) => {
 
   const resolved = allergenFileMap[normalized] || normalized
 
-  return normalized ? `/alergenos/${resolved}.png` : ''
+  return normalized ? `${import.meta.env.BASE_URL}alergenos/${resolved}.png` : ''
 }
 
 const uiText = computed(() => ({

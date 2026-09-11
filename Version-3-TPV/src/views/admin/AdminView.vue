@@ -184,7 +184,7 @@
           </div>
         </div>
         <ul class="list">
-          <li v-for="product in products" :key="product.id" class="list-item product-item">
+          <li v-for="product in paginatedProducts" :key="product.id" class="list-item product-item">
             <div v-if="editingProductId === product.id" class="edit-product-form">
               <div class="form-header compact-header">
                 <h3>Editar producto</h3>
@@ -291,6 +291,11 @@
             </div>
           </li>
         </ul>
+        <div v-if="productPageCount > 1" class="product-pagination">
+          <button class="chip" type="button" :disabled="productPage === 1" @click="productPage--">← Anterior</button>
+          <span>Página {{ productPage }} de {{ productPageCount }}</span>
+          <button class="chip" type="button" :disabled="productPage === productPageCount" @click="productPage++">Siguiente →</button>
+        </div>
       </div>
 
       <div v-else-if="selectedModule === 'tables'" class="management-card">
@@ -855,6 +860,18 @@ const modules = [
 
 const categories = ref<any[]>([])
 const products = ref<any[]>([])
+const productPage = ref(1)
+const productPageSize = 3
+const productPageCount = computed(() => Math.max(1, Math.ceil(products.value.length / productPageSize)))
+const paginatedProducts = computed(() => {
+  const start = (productPage.value - 1) * productPageSize
+  return products.value.slice(start, start + productPageSize)
+})
+
+watch(productPageCount, (pageCount) => {
+  productPage.value = Math.min(productPage.value, pageCount)
+})
+
 const tables = ref<any[]>(storeTables.value ?? [])
 const suppliers = ref<any[]>([])
 const galleryImages = ref<any[]>([])
@@ -3821,6 +3838,24 @@ h1 {
   margin-top: 16px;
   padding-top: 16px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.product-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.product-pagination button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
 }
 
 .pagination-info {

@@ -1,7 +1,7 @@
 <template>
   <main class="status-page">
     <header class="header">
-      <button class="return-btn" @click="router.push('/')">← Volver a la carta</button>
+      <button class="return-btn" @click="router.push('/carta')">← Volver a la carta</button>
       <div>
         <p class="eyebrow">Mesa {{ table?.number ?? '—' }}</p>
         <h1>Estado del pedido</h1>
@@ -40,7 +40,7 @@
       <div aria-hidden="true">🍽️</div>
       <h2>No hay ningún pedido actualmente</h2>
       <p>Cuando envíes una comanda, aparecerá aquí su estado y podrás seguirla en tiempo real.</p>
-      <button type="button" @click="router.push('/')">Volver a la carta</button>
+      <button type="button" @click="router.push('/carta')">Volver a la carta</button>
     </section>
 
     <nav v-if="pageCount > 1" class="pagination" aria-label="Paginación de pedidos">

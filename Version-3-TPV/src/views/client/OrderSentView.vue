@@ -30,7 +30,7 @@
 
       <p class="message">El camarero lo recibirá en unos segundos.</p>
       <div class="actions">
-        <button class="secondary" @click="router.push('/')">Volver a la carta</button>
+        <button class="secondary" @click="router.push('/carta')">Volver a la carta</button>
         <button class="primary" @click="router.push('/cuenta')">Pagar ahora</button>
       </div>
     </div>

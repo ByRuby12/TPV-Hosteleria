@@ -212,7 +212,7 @@ function goBack() {
 
 onMounted(() => {
   if (!session.value) {
-    router.push('/')
+    router.push('/carta')
   }
 })
 </script>

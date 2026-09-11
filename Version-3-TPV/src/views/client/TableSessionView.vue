@@ -14,7 +14,7 @@
       </div>
       <p class="welcome-copy">Consulta la carta, añade lo que te apetezca y envía tu pedido cuando estés listo.</p>
 
-      <button class="primary" @click="router.push('/')">
+      <button class="primary" @click="router.push('/carta')">
         <span>Acceder a la carta</span>
         <span aria-hidden="true">→</span>
       </button>

@@ -1,7 +1,7 @@
 <template>
   <div class="page cart-page">
     <header class="return-header">
-      <button class="return-btn" @click="router.push('/')">← Volver a la carta</button>
+      <button class="return-btn" @click="router.push('/carta')">← Volver a la carta</button>
     </header>
 
     <div v-if="cart.length === 0" class="empty-state">

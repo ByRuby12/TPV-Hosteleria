@@ -5,7 +5,7 @@
     </div>
 
     <header class="return-header">
-      <button class="return-btn" @click="router.push('/')">← Volver a la carta</button>
+      <button class="return-btn" @click="router.push('/carta')">← Volver a la carta</button>
     </header>
 
     <div class="card">

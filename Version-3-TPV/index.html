@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Restaurante y gestión de pedidos" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Anek+Devanagari:wght@400;700&family=Montserrat:wght@400;700&family=Oswald:wght@400;700&family=Poppins:wght@400;700&family=Raleway:wght@400;700&family=Ubuntu:wght@400;700&display=swap" rel="stylesheet">
+    <title>Restaurante</title>
+  </head>
+  <body>
+    <script>
+      (() => {
+        const isExternalVitalsError = (message, stack) =>
+          String(message || '').includes("Cannot read properties of undefined (reading 'startTime')") &&
+          (String(stack || '').includes('reportAllChanges') || String(message || '').includes('reportAllChanges'))
+
+        window.addEventListener('error', (event) => {
+          if (isExternalVitalsError(event.error?.message || event.message, event.error?.stack)) {
+            event.preventDefault()
+            event.stopImmediatePropagation()
+          }
+        }, true)
+
+        window.addEventListener('unhandledrejection', (event) => {
+          const reason = event.reason || {}
+          if (isExternalVitalsError(reason.message, reason.stack)) {
+            event.preventDefault()
+            event.stopImmediatePropagation()
+          }
+        }, true)
+      })()
+    </script>
+    <div id="app"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

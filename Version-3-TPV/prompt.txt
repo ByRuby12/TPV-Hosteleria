@@ -1,0 +1,2696 @@
+# PROYECTO: SISTEMA DE PEDIDOS POR QR + TPV/COCINA EN TIEMPO REAL
+
+Quiero que desarrolles desde cero una aplicación web completa para un establecimiento de restauración.
+
+La aplicación tendrá dos partes principales:
+
+1. **INTERFAZ CLIENTE**
+
+   * Se utiliza principalmente desde teléfonos móviles.
+   * El cliente escanea un código QR situado físicamente en una mesa.
+   * Puede consultar la carta.
+   * Selecciona productos y cantidades.
+   * Puede añadir notas especiales.
+   * Envía el pedido.
+   * Puede seguir realizando nuevos pedidos mientras la mesa siga abierta.
+
+2. **PANEL TPV / COCINA / ADMINISTRACIÓN**
+
+   * Se utiliza desde tablet, ordenador o portátil.
+   * Tiene una interfaz estilo TPV, optimizada para pantallas táctiles.
+   * Recibe automáticamente los pedidos realizados por los clientes.
+   * Los pedidos deben aparecer en tiempo real sin necesidad de recargar la página.
+   * Permite gestionar el estado de los pedidos.
+   * Permite ver la mesa, productos, cantidades, notas y hora del pedido.
+   * Permite marcar pedidos como entregados.
+   * Mantiene el historial de pedidos de una mesa para poder calcular la cuenta final.
+   * Permite cerrar una mesa.
+   * Permite dividir la cuenta.
+
+---
+
+# 1. TECNOLOGÍAS OBLIGATORIAS
+
+Utiliza:
+
+* Vue 3
+* Vite
+* JavaScript o TypeScript, preferiblemente TypeScript si no complica innecesariamente el proyecto.
+* Vue Router
+* Firebase
+* Firebase Authentication para la zona administrativa.
+* Firebase Firestore como base de datos principal.
+* Firebase Storage si se necesitan imágenes de productos.
+* Firebase Hosting para poder desplegar el proyecto.
+* CSS moderno y responsive.
+* No utilizar frameworks excesivamente complejos si no son necesarios.
+
+El proyecto debe poder ejecutarse fácilmente con:
+
+```bash
+npm install
+npm run dev
+```
+
+Y posteriormente:
+
+```bash
+npm run build
+```
+
+Debe estar preparado para subirlo a GitHub y desplegarlo fácilmente mediante Firebase Hosting o GitHub.
+
+NO quiero un backend tradicional separado si Firebase permite resolverlo correctamente.
+
+Si alguna operación necesita privilegios de servidor, utilizar Firebase Cloud Functions en lugar de exponer credenciales o lógica sensible al cliente.
+
+---
+
+# 2. OBJETIVO GENERAL
+
+El objetivo es crear un sistema similar al funcionamiento de los restaurantes modernos donde:
+
+CLIENTE:
+
+QR DE MESA
+↓
+SESIÓN DE MESA
+↓
+CARTA
+↓
+SELECCIÓN DE PRODUCTOS
+↓
+CARRITO
+↓
+NOTAS
+↓
+CONFIRMAR PEDIDO
+↓
+PEDIDO ENVIADO
+
+Y simultáneamente:
+
+TPV / COCINA
+↓
+NUEVO PEDIDO EN TIEMPO REAL
+↓
+MESA + PRODUCTOS + NOTAS + HORA
+↓
+PREPARANDO
+↓
+LISTO / ENTREGADO
+↓
+SE MANTIENE EN LA CUENTA DE LA MESA
+
+Cuando la mesa termina:
+
+CUENTA DE MESA
+↓
+TOTAL
+↓
+DIVIDIR CUENTA
+├── A PARTES IGUALES
+└── CADA PERSONA PAGA LO SUYO
+↓
+MESA CERRADA
+↓
+SESIÓN INVALIDADA
+↓
+NUEVA SESIÓN PARA EL SIGUIENTE CLIENTE
+
+---
+
+# 3. ESTRUCTURA DEL PROYECTO
+
+Crea una arquitectura limpia y mantenible.
+
+Una estructura aproximada:
+
+```text
+src/
+├── assets/
+├── components/
+│   ├── client/
+│   ├── pos/
+│   ├── kitchen/
+│   ├── common/
+│   └── ui/
+├── views/
+│   ├── client/
+│   ├── pos/
+│   ├── kitchen/
+│   ├── admin/
+│   └── auth/
+├── router/
+├── stores/
+├── services/
+│   ├── firebase/
+│   ├── orders/
+│   ├── tables/
+│   ├── sessions/
+│   ├── products/
+│   └── users/
+├── composables/
+├── types/
+├── utils/
+├── layouts/
+├── App.vue
+└── main.ts
+```
+
+Utiliza componentes reutilizables.
+
+No quiero una aplicación formada por un único archivo gigante.
+
+---
+
+# 4. FIREBASE
+
+Utilizar Firebase como infraestructura principal.
+
+Preparar el proyecto para recibir posteriormente mis credenciales mediante variables de entorno.
+
+Crear:
+
+```text
+.env.example
+```
+
+con una estructura similar a:
+
+```env
+VITE_FIREBASE_API_KEY=
+VITE_FIREBASE_AUTH_DOMAIN=
+VITE_FIREBASE_PROJECT_ID=
+VITE_FIREBASE_STORAGE_BUCKET=
+VITE_FIREBASE_MESSAGING_SENDER_ID=
+VITE_FIREBASE_APP_ID=
+```
+
+NO escribir claves reales.
+
+También crear una documentación indicando exactamente dónde tengo que colocar las credenciales de Firebase.
+
+---
+
+# 5. BASE DE DATOS FIRESTORE
+
+Diseña una estructura de Firestore correctamente normalizada para este proyecto.
+
+Una estructura orientativa podría ser:
+
+```text
+users/
+    userId
+
+tables/
+    tableId
+
+products/
+    productId
+
+categories/
+    categoryId
+
+tableSessions/
+    sessionId
+
+orders/
+    orderId
+
+payments/
+    paymentId
+
+settings/
+    settingsId
+```
+
+Puedes modificar esta estructura si encuentras una arquitectura mejor.
+
+---
+
+# 6. MESAS
+
+Cada mesa debe tener:
+
+```text
+id
+number
+name
+active
+qrIdentifier
+currentSessionId
+createdAt
+updatedAt
+```
+
+Ejemplo:
+
+```text
+Mesa 1
+Mesa 2
+Mesa 3
+...
+Mesa 40
+```
+
+El sistema debe poder soportar muchas mesas, no solamente 40.
+
+Cada mesa tiene un QR físico.
+
+IMPORTANTE:
+
+El QR NO debe contener una sesión permanente.
+
+El QR debe identificar únicamente la mesa.
+
+Por ejemplo:
+
+```text
+https://dominio.com/mesa/ABC123
+```
+
+donde `ABC123` identifica la mesa.
+
+---
+
+# 7. SISTEMA DE SESIONES Y SEGURIDAD DEL QR
+
+Esta es una de las partes MÁS IMPORTANTES del proyecto.
+
+No quiero que una URL de cliente pueda utilizarse indefinidamente.
+
+Cuando alguien escanea el QR de una mesa:
+
+```text
+/mesa/:qrIdentifier
+```
+
+el sistema debe comprobar la mesa y crear o recuperar la sesión activa correspondiente.
+
+La sesión debe tener:
+
+```text
+sessionId
+tableId
+token
+createdAt
+expiresAt
+active
+closedAt
+```
+
+El token debe ser aleatorio, impredecible y suficientemente largo.
+
+Ejemplo conceptual:
+
+```text
+/pedido/a8f7c1d92e84f7...
+```
+
+La URL real debe ser diferente cada vez que corresponda crear una nueva sesión/token.
+
+---
+
+# 8. DURACIÓN DE LA SESIÓN
+
+Cada sesión debe tener una duración máxima de:
+
+**3 HORAS**
+
+Guardar:
+
+```text
+createdAt
+expiresAt
+```
+
+El frontend debe comprobar que la sesión no esté caducada.
+
+Si la sesión ha caducado:
+
+* No permitir nuevos pedidos.
+* Mostrar un mensaje indicando que la sesión ha expirado.
+* Permitir volver a escanear el QR para crear/obtener una sesión válida.
+
+IMPORTANTE:
+
+La sesión de mesa debe poder seguir agrupando diferentes pedidos realizados durante esas 3 horas.
+
+Por ejemplo:
+
+12:00 → cliente pide cafés.
+
+12:30 → pide bocadillos.
+
+13:00 → pide bebidas.
+
+Todo debe pertenecer a:
+
+```text
+Mesa 5
+Sesión X
+```
+
+y aparecer posteriormente en la misma cuenta.
+
+---
+
+# 9. EVITAR CONFLICTOS ENTRE CLIENTES
+
+Puede haber varios clientes en la misma mesa.
+
+No quiero que cada cliente tenga una cesta completamente independiente que haga que los pedidos se pierdan o se mezclen incorrectamente.
+
+Todos los pedidos deben estar asociados a:
+
+```text
+tableId
+sessionId
+```
+
+De esta forma:
+
+```text
+Mesa 5
+   └── Sesión X
+       ├── Pedido 001
+       ├── Pedido 002
+       ├── Pedido 003
+       └── Pedido 004
+```
+
+Cada pedido tendrá su propio `orderId`.
+
+Si varias personas hacen pedidos desde la misma mesa, todos se acumulan en la sesión.
+
+---
+
+# 10. PROBLEMA DEL TOKEN DESPUÉS DE CERRAR LA MESA
+
+Esto también es MUY IMPORTANTE.
+
+Imagina:
+
+Una persona está sentada en la Mesa 8.
+
+Escanea el QR.
+
+Obtiene:
+
+```text
+/pedido/abc123
+```
+
+Después de terminar la comida, el camarero cierra la mesa.
+
+La persona podría intentar utilizar posteriormente:
+
+```text
+/pedido/abc123
+```
+
+para realizar otro pedido.
+
+Esto NO debe funcionar.
+
+Cuando el TPV cierre la mesa:
+
+```text
+session.active = false
+session.closedAt = fecha
+```
+
+Todos los tokens asociados a esa sesión deben quedar invalidados.
+
+Si alguien intenta acceder posteriormente mediante una URL antigua:
+
+```text
+/pedido/abc123
+```
+
+debe aparecer:
+
+```text
+Esta sesión ha finalizado.
+
+Escanea nuevamente el código QR de tu mesa para comenzar una nueva sesión.
+```
+
+No permitir realizar pedidos.
+
+---
+
+# 11. NUEVA SESIÓN DESPUÉS DE CERRAR LA MESA
+
+Cuando una mesa se haya cerrado:
+
+```text
+Mesa 8
+Sesión antigua → CERRADA
+```
+
+Cuando posteriormente alguien vuelva a escanear el QR:
+
+```text
+Mesa 8
+Nueva sesión → ACTIVA
+```
+
+Esto debe comenzar una nueva cuenta completamente independiente.
+
+Los pedidos anteriores deben mantenerse en la base de datos como historial, pero NO formar parte de la nueva cuenta.
+
+---
+
+# 12. IMPORTANTE SOBRE ESCANEOS MÚLTIPLES
+
+Diseña el sistema de forma que varios clientes puedan escanear el QR de la misma mesa durante una sesión activa.
+
+Todos deben terminar asociados a la misma:
+
+```text
+tableId
+sessionId
+```
+
+No crear una cuenta independiente por cada persona.
+
+Sin embargo, cada acceso puede tener un token de cliente diferente si resulta necesario para seguridad.
+
+La arquitectura debe diferenciar claramente:
+
+```text
+MESA
+SESIÓN DE MESA
+ACCESO/TOKEN DE CLIENTE
+PEDIDO
+```
+
+Ejemplo:
+
+```text
+Mesa 10
+│
+└── Sesión 2026-001
+    │
+    ├── Cliente/token A
+    │      └── Pedido 1
+    │
+    ├── Cliente/token B
+    │      └── Pedido 2
+    │
+    └── Cliente/token C
+           └── Pedido 3
+```
+
+---
+
+# 13. CARTA DEL CLIENTE
+
+La pantalla principal del cliente debe ser una carta moderna y muy sencilla.
+
+Categorías iniciales:
+
+* Bebidas
+* Cafés
+* Bocadillos
+* Hamburguesas
+* Raciones
+* Desayunos
+* Postres
+* Otros
+
+Las categorías NO deben estar escritas directamente en el código.
+
+Deben almacenarse en Firebase para poder modificarlas posteriormente.
+
+---
+
+# 14. PRODUCTOS
+
+Cada producto debe poder tener:
+
+```text
+id
+name
+description
+price
+image
+categoryId
+available
+order
+createdAt
+updatedAt
+```
+
+Ejemplo:
+
+```text
+Coca-Cola
+2,00 €
+
+Bocadillo de tortilla
+5,50 €
+
+Café con leche
+1,50 €
+```
+
+El administrador debe poder modificar precios y disponibilidad.
+
+Si un producto está marcado como no disponible:
+
+```text
+NO DISPONIBLE
+```
+
+y el cliente no debe poder añadirlo al carrito.
+
+---
+
+# 15. SELECCIÓN DE PRODUCTOS
+
+El cliente debe poder añadir un mismo producto tantas veces como quiera.
+
+Ejemplo:
+
+```text
+Coca-Cola
+[-] 3 [+]
+```
+
+Si pulsa varias veces:
+
+```text
+Coca-Cola x3
+```
+
+No crear necesariamente tres líneas independientes en el carrito.
+
+Agrupar productos iguales cuando corresponda.
+
+---
+
+# 16. OPCIONES DE PRODUCTOS
+
+Diseñar el sistema pensando en que posteriormente puedan existir productos con opciones.
+
+Por ejemplo:
+
+```text
+Hamburguesa
+```
+
+Opciones:
+
+```text
+Sin cebolla
+Sin tomate
+Extra queso +1€
+Extra bacon +1,50€
+```
+
+El sistema debe estar preparado para ello aunque inicialmente no sea obligatorio tener un configurador complejo.
+
+---
+
+# 17. CARRITO
+
+Crear una pantalla de carrito/resumen.
+
+Debe mostrar:
+
+```text
+Coca-Cola
+x2
+4,00 €
+
+Bocadillo de tortilla
+x1
+5,50 €
+
+Café con leche
+x2
+3,00 €
+
+----------------
+
+TOTAL
+12,50 €
+```
+
+Mostrar claramente el número de productos.
+
+Permitir:
+
+* Añadir unidades.
+* Quitar unidades.
+* Eliminar producto.
+* Volver a la carta.
+* Vaciar carrito.
+
+---
+
+# 18. NOTA DEL PEDIDO
+
+Antes de enviar el pedido debe existir un campo:
+
+```text
+Notas para cocina
+```
+
+Ejemplos:
+
+```text
+Sin hielo.
+```
+
+```text
+El bocadillo sin tomate.
+```
+
+```text
+Café descafeinado.
+```
+
+La nota pertenece al pedido completo.
+
+En el futuro se podría permitir nota por producto, por lo que diseña la estructura pensando en esa posibilidad.
+
+---
+
+# 19. CONFIRMAR PEDIDO
+
+Antes de enviarlo mostrar una pantalla de confirmación:
+
+```text
+¿Confirmar pedido?
+
+Mesa 12
+
+Productos:
+...
+
+Nota:
+...
+
+Total:
+18,50 €
+
+[ VOLVER ]
+[ CONFIRMAR PEDIDO ]
+```
+
+Una vez pulsado:
+
+```text
+CONFIRMAR PEDIDO
+```
+
+crear el pedido en Firebase.
+
+---
+
+# 20. ESTRUCTURA DE PEDIDO
+
+Cada pedido debe guardar como mínimo:
+
+```text
+id
+tableId
+sessionId
+clientTokenId
+items
+note
+total
+status
+createdAt
+updatedAt
+startedAt
+readyAt
+deliveredAt
+```
+
+Cada item:
+
+```text
+productId
+name
+price
+quantity
+subtotal
+options
+note
+```
+
+Es MUY IMPORTANTE guardar también el nombre y precio del producto en el momento en que se realizó el pedido.
+
+No depender únicamente de consultar posteriormente el producto actual.
+
+Ejemplo:
+
+Si hoy una Coca-Cola cuesta 2€ y mañana cuesta 2,50€, un pedido antiguo debe continuar teniendo:
+
+```text
+price: 2.00
+```
+
+---
+
+# 21. ESTADOS DE PEDIDO
+
+Utilizar estados claros.
+
+Por ejemplo:
+
+```text
+PENDING
+PREPARING
+READY
+DELIVERED
+CANCELLED
+```
+
+Flujo:
+
+```text
+PENDING
+↓
+PREPARING
+↓
+READY
+↓
+DELIVERED
+```
+
+No borrar nunca el pedido.
+
+Si se cancela:
+
+```text
+CANCELLED
+```
+
+y debe quedar registrado.
+
+---
+
+# 22. HORA DEL PEDIDO
+
+El TPV debe mostrar claramente la hora a la que el cliente realizó el pedido.
+
+Ejemplo:
+
+```text
+Mesa 7
+Pedido #104
+
+11:42
+
+2x Coca-Cola
+1x Bocadillo de tortilla
+
+Nota:
+Sin tomate.
+
+TOTAL: 9,50 €
+```
+
+Utilizar timestamps de Firebase/server cuando sea posible para evitar problemas derivados del reloj del dispositivo del cliente.
+
+---
+
+# 23. TPV / PANEL DE COCINA
+
+Crear una interfaz independiente para el personal.
+
+Por ejemplo:
+
+```text
+/admin
+```
+
+o:
+
+```text
+/pos
+```
+
+Debe estar protegida mediante Firebase Authentication.
+
+NO permitir que cualquier cliente acceda al TPV.
+
+---
+
+# 24. LOGIN DEL TPV
+
+Crear login mediante Firebase Authentication.
+
+Inicialmente:
+
+```text
+Email
+Contraseña
+```
+
+El sistema debe comprobar que el usuario tenga permisos adecuados.
+
+Crear roles:
+
+```text
+admin
+kitchen
+waiter
+```
+
+Como mínimo:
+
+### ADMIN
+
+Puede:
+
+* Gestionar productos.
+* Gestionar categorías.
+* Gestionar mesas.
+* Ver pedidos.
+* Gestionar usuarios.
+* Cerrar mesas.
+* Ver cuentas.
+* Configurar el sistema.
+
+### COCINA
+
+Puede:
+
+* Ver pedidos.
+* Ver mesas.
+* Ver productos.
+* Ver notas.
+* Cambiar estados de pedidos.
+
+### CAMARERO / TPV
+
+Puede:
+
+* Ver pedidos.
+* Gestionar mesas.
+* Marcar pedidos como entregados.
+* Ver cuenta.
+* Dividir cuenta.
+* Cerrar mesa.
+
+---
+
+# 25. PANEL PRINCIPAL DEL TPV
+
+La pantalla principal debe estar pensada para una tablet.
+
+Diseño tipo TPV.
+
+Mostrar:
+
+```text
+MESAS
+```
+
+en formato de tarjetas.
+
+Ejemplo:
+
+```text
+┌─────────────┐
+│ MESA 1      │
+│ 2 pedidos   │
+│ 18,50 €     │
+└─────────────┘
+
+┌─────────────┐
+│ MESA 2      │
+│ 0 pedidos   │
+│ LIBRE       │
+└─────────────┘
+```
+
+Las mesas con actividad deben destacar visualmente.
+
+---
+
+# 26. PEDIDOS EN TIEMPO REAL
+
+Esto es obligatorio.
+
+Cuando un cliente haga un pedido:
+
+```text
+CLIENTE
+↓
+FIREBASE
+↓
+TPV
+```
+
+El TPV debe recibirlo automáticamente.
+
+NO quiero que el empleado tenga que actualizar la página.
+
+Utilizar Firestore listeners (`onSnapshot`) o la solución equivalente de Firebase.
+
+Ejemplo:
+
+Cliente realiza pedido a las:
+
+```text
+12:15
+```
+
+El TPV debe mostrar inmediatamente:
+
+```text
+🔔 NUEVO PEDIDO
+
+Mesa 4
+
+12:15
+
+2x Coca-Cola
+1x Bocadillo
+
+Nota:
+Sin cebolla.
+```
+
+---
+
+# 27. SONIDO / NOTIFICACIÓN
+
+Cuando llegue un nuevo pedido:
+
+* Mostrar una alerta visual.
+* Opcionalmente reproducir un sonido.
+* Destacar el pedido.
+
+El sonido debe poder activarse/desactivarse desde configuración.
+
+No depender de notificaciones del navegador para el funcionamiento principal.
+
+---
+
+# 28. VISTA DE PEDIDOS
+
+Crear una vista donde cocina pueda ver:
+
+```text
+NUEVOS
+EN PREPARACIÓN
+LISTOS
+ENTREGADOS
+```
+
+Puede utilizarse un sistema tipo Kanban.
+
+Ejemplo:
+
+```text
+NUEVOS       PREPARANDO       LISTOS
+------------------------------------------------
+
+Mesa 2       Mesa 7           Mesa 3
+12:32        12:28            12:20
+
+Mesa 5       Mesa 8           Mesa 1
+12:31        12:25            12:15
+```
+
+---
+
+# 29. INFORMACIÓN DEL PEDIDO
+
+Cada tarjeta debe mostrar:
+
+* Mesa.
+* Número de pedido.
+* Hora.
+* Tiempo transcurrido.
+* Productos.
+* Cantidades.
+* Opciones.
+* Nota.
+* Total.
+* Estado.
+
+Ejemplo:
+
+```text
+MESA 14
+Pedido #152
+
+12:42
+Hace 4 minutos
+
+2x Café con leche
+1x Bocadillo de pollo
+
+NOTA:
+Uno sin tomate.
+
+TOTAL: 8,50 €
+
+[ PREPARANDO ]
+```
+
+---
+
+# 30. PEDIDO TERMINADO
+
+Cuando cocina termine:
+
+```text
+MARCAR COMO LISTO
+```
+
+Posteriormente el camarero puede:
+
+```text
+MARCAR COMO ENTREGADO
+```
+
+Cuando esté entregado:
+
+El pedido debe cambiar visualmente de color para que el empleado sepa que ya se ha entregado.
+
+PERO:
+
+**NO BORRAR EL PEDIDO.**
+
+Debe seguir asociado a la sesión de la mesa.
+
+Ejemplo:
+
+```text
+Mesa 5
+--------------------------------
+
+Pedido #1     ENTREGADO
+Pedido #2     ENTREGADO
+Pedido #3     PREPARANDO
+Pedido #4     NUEVO
+```
+
+---
+
+# 31. CUENTA DE LA MESA
+
+La cuenta debe sumar TODOS los pedidos válidos de la sesión.
+
+Ejemplo:
+
+```text
+MESA 5
+
+Pedido #1     8,50 €
+Pedido #2     4,00 €
+Pedido #3     12,50 €
+Pedido #4     3,00 €
+
+--------------------
+
+TOTAL
+28,00 €
+```
+
+Los pedidos entregados continúan formando parte del total.
+
+Los pedidos cancelados NO deben sumar.
+
+---
+
+# 32. CIERRE DE MESA
+
+Cuando los clientes quieran marcharse:
+
+El empleado pulsa:
+
+```text
+CERRAR MESA
+```
+
+Antes de cerrar mostrar:
+
+```text
+¿Cerrar Mesa 5?
+
+Total: 28,00 €
+
+Todos los pedidos han sido registrados.
+
+Esta acción finalizará la sesión actual y no permitirá nuevos pedidos.
+
+[ CANCELAR ]
+[ CONTINUAR ]
+```
+
+---
+
+# 33. DIVIDIR CUENTA
+
+La cuenta debe permitir diferentes métodos.
+
+## OPCIÓN 1: UNA SOLA PERSONA
+
+```text
+TOTAL: 28,00 €
+```
+
+---
+
+## OPCIÓN 2: DIVIDIR A PARTES IGUALES
+
+El empleado selecciona:
+
+```text
+Número de personas:
+
+[ - ] 4 [ + ]
+```
+
+El sistema calcula:
+
+```text
+28,00 € / 4
+
+Persona 1: 7,00 €
+Persona 2: 7,00 €
+Persona 3: 7,00 €
+Persona 4: 7,00 €
+```
+
+---
+
+# 34. CADA PERSONA PAGA LO SUYO
+
+Debe existir también una opción:
+
+```text
+CADA UNO PAGA LO SUYO
+```
+
+El empleado debe poder crear comensales:
+
+```text
+Persona 1
+Persona 2
+Persona 3
+Persona 4
+```
+
+y asignar productos a cada uno.
+
+Ejemplo:
+
+```text
+PERSONA 1
+
+1x Hamburguesa       8,00 €
+1x Coca-Cola          2,00 €
+
+TOTAL                 10,00 €
+```
+
+```text
+PERSONA 2
+
+1x Bocadillo          6,00 €
+1x Agua               1,50 €
+
+TOTAL                  7,50 €
+```
+
+Debe ser posible asignar las unidades individualmente.
+
+Por ejemplo:
+
+```text
+3x Coca-Cola
+```
+
+pueden dividirse:
+
+```text
+Persona 1 → 1
+Persona 2 → 1
+Persona 3 → 1
+```
+
+---
+
+# 35. SISTEMA DE PAGOS
+
+Aunque inicialmente no sea necesario integrar una pasarela de pago online, crear una estructura preparada para registrar:
+
+```text
+paymentId
+sessionId
+tableId
+amount
+method
+status
+createdAt
+```
+
+Métodos:
+
+```text
+cash
+card
+other
+```
+
+El empleado podrá registrar que la cuenta ha sido pagada.
+
+NO es necesario implementar inicialmente Stripe, Redsys u otra pasarela.
+
+---
+
+# 36. CIERRE DEFINITIVO
+
+Una vez pagada la cuenta:
+
+```text
+MESA 5
+↓
+CUENTA PAGADA
+↓
+SESIÓN CERRADA
+↓
+TOKENS INVALIDADOS
+↓
+MESA LIBRE
+```
+
+La mesa vuelve a:
+
+```text
+LIBRE
+```
+
+Los pedidos antiguos permanecen almacenados para historial.
+
+---
+
+# 37. RESET DEL QR / SESIÓN
+
+Cuando la mesa se cierre:
+
+```text
+currentSessionId = null
+```
+
+y la sesión anterior:
+
+```text
+active = false
+```
+
+Todos los accesos asociados a ella dejan de funcionar.
+
+El QR físico no necesita cambiar.
+
+Esto es MUY IMPORTANTE:
+
+El QR de la mesa puede permanecer físicamente en la mesa durante años.
+
+Lo que cambia es la sesión interna.
+
+Ejemplo:
+
+```text
+QR Mesa 5
+    ↓
+Sesión A
+    ↓
+Cerrar mesa
+    ↓
+Sesión A INVALIDADA
+    ↓
+Nuevo escaneo
+    ↓
+Sesión B
+```
+
+---
+
+# 38. CLIENTE: DISEÑO
+
+La interfaz móvil debe ser:
+
+* Muy sencilla.
+* Rápida.
+* Moderna.
+* Responsive.
+* Pensada para utilizar con una sola mano.
+* Botones grandes.
+* Texto legible.
+* Navegación sencilla.
+
+La pantalla superior debe mostrar:
+
+```text
+Mesa 5
+```
+
+y opcionalmente:
+
+```text
+Sesión activa
+```
+
+No mostrar información técnica como IDs o tokens.
+
+---
+
+# 39. BARRA DE NAVEGACIÓN DEL CLIENTE
+
+Crear navegación sencilla:
+
+```text
+Inicio
+Carta
+Carrito
+Mi mesa
+```
+
+El carrito debe mostrar un contador:
+
+```text
+🛒 4
+```
+
+---
+
+# 40. PEDIDOS ANTERIORES DE LA SESIÓN
+
+El cliente podría tener una sección:
+
+```text
+Mis pedidos
+```
+
+para ver:
+
+```text
+Pedido #1
+12:15
+Entregado
+
+Pedido #2
+12:35
+Preparando
+
+Pedido #3
+12:48
+Nuevo
+```
+
+Esto debe estar limitado a la sesión actual.
+
+---
+
+# 41. ESTADO DE LA MESA PARA EL CLIENTE
+
+El cliente debe poder ver si su pedido está:
+
+```text
+Pedido recibido
+↓
+En preparación
+↓
+Listo
+↓
+Entregado
+```
+
+Actualizar automáticamente mediante Firebase.
+
+---
+
+# 42. PRODUCTOS Y ADMINISTRACIÓN
+
+Crear un panel de administración donde el administrador pueda:
+
+### Categorías
+
+* Crear.
+* Editar.
+* Eliminar/desactivar.
+* Ordenar.
+
+### Productos
+
+* Crear.
+* Editar.
+* Eliminar/desactivar.
+* Cambiar precio.
+* Cambiar imagen.
+* Cambiar categoría.
+* Marcar disponible/no disponible.
+* Cambiar orden.
+
+---
+
+# 43. GESTIÓN DE MESAS
+
+Desde administración:
+
+```text
+Mesa 1
+Mesa 2
+Mesa 3
+...
+```
+
+Poder:
+
+* Crear mesa.
+* Eliminar mesa.
+* Cambiar número/nombre.
+* Activar/desactivar.
+* Generar QR.
+* Descargar/imprimir QR.
+
+Crear una página:
+
+```text
+/qr-mesas
+```
+
+donde el administrador pueda ver todos los QR.
+
+Por ejemplo:
+
+```text
+MESA 1
+[ QR ]
+
+MESA 2
+[ QR ]
+
+MESA 3
+[ QR ]
+```
+
+y disponer de una opción:
+
+```text
+DESCARGAR QR
+```
+
+---
+
+# 44. QR
+
+El QR debe apuntar a una URL estable de la mesa.
+
+Ejemplo:
+
+```text
+https://midominio.com/mesa/mesa-001
+```
+
+No generar el QR con el token de sesión.
+
+El QR identifica la mesa.
+
+La aplicación genera/gestiona las sesiones dinámicamente.
+
+---
+
+# 45. TIEMPO REAL
+
+Todo lo importante debe utilizar Firestore en tiempo real.
+
+Actualizar automáticamente:
+
+* Nuevos pedidos.
+* Cambios de estado.
+* Productos disponibles/no disponibles.
+* Estado de mesa.
+* Sesión.
+* Cuenta.
+* Pedidos entregados.
+
+Evitar consultas constantes mediante polling si Firestore listeners resuelven correctamente el problema.
+
+---
+
+# 46. CONCURRENCIA
+
+Debes diseñar correctamente el sistema para que dos clientes puedan realizar pedidos simultáneamente desde la misma mesa.
+
+Ejemplo:
+
+Persona A envía:
+
+```text
+2 Coca-Colas
+```
+
+al mismo tiempo que:
+
+Persona B envía:
+
+```text
+1 Bocadillo
+```
+
+No debe sobrescribirse un pedido con otro.
+
+Cada pedido debe tener su propio documento.
+
+NO utilizar una única cesta global de Firestore que pueda provocar sobrescrituras.
+
+---
+
+# 47. SEGURIDAD FIRESTORE
+
+Crear reglas de seguridad Firestore.
+
+El cliente:
+
+* Puede consultar únicamente los datos públicos necesarios.
+* Puede consultar productos disponibles.
+* Puede crear pedidos válidos asociados a una sesión activa.
+* No puede modificar arbitrariamente pedidos antiguos.
+* No puede cambiar precios.
+* No puede cambiar estados de pedidos.
+* No puede cerrar mesas.
+* No puede acceder al panel administrativo.
+
+El personal autenticado podrá realizar las operaciones correspondientes según su rol.
+
+No confiar exclusivamente en las comprobaciones del frontend.
+
+Las operaciones sensibles deben protegerse también en Firestore Security Rules o Cloud Functions.
+
+---
+
+# 48. VALIDACIÓN DE PEDIDOS
+
+No confiar en el precio enviado por el navegador.
+
+Si el cliente envía:
+
+```text
+price: 0.01
+```
+
+cuando el producto cuesta:
+
+```text
+2.00
+```
+
+el sistema NO debe aceptar ese precio.
+
+El servidor/Cloud Function debe validar:
+
+* Producto.
+* Precio.
+* Disponibilidad.
+* Cantidad.
+* Sesión.
+* Mesa.
+* Estado.
+
+El total debe calcularse utilizando los precios reales almacenados en Firebase.
+
+---
+
+# 49. PREVENIR PEDIDOS CON SESIÓN CADUCADA
+
+Antes de crear un pedido:
+
+Comprobar:
+
+```text
+session.active === true
+```
+
+y:
+
+```text
+currentTime < expiresAt
+```
+
+Si no:
+
+```text
+PEDIDO NO PERMITIDO
+
+La sesión de esta mesa ha finalizado.
+Escanea nuevamente el QR.
+```
+
+---
+
+# 50. PREVENIR PEDIDOS DESPUÉS DEL CIERRE
+
+Aunque la sesión no haya cumplido las 3 horas, si el empleado ha cerrado la mesa:
+
+```text
+active = false
+```
+
+no se pueden crear más pedidos.
+
+Esto tiene prioridad sobre el tiempo de expiración.
+
+---
+
+# 51. EXPIRACIÓN AUTOMÁTICA
+
+Crear mecanismo para detectar sesiones expiradas.
+
+Si:
+
+```text
+expiresAt < now
+```
+
+la sesión debe considerarse inválida.
+
+No es obligatorio depender de un proceso que esté ejecutándose constantemente.
+
+La aplicación puede comprobar la expiración cuando alguien intente utilizar la sesión.
+
+Si utilizas Cloud Functions para limpiar sesiones antiguas, hacerlo como tarea adicional.
+
+---
+
+# 52. HISTORIAL
+
+Crear historial de:
+
+* Pedidos.
+* Mesas.
+* Sesiones.
+* Pagos.
+
+El administrador debe poder consultar posteriormente:
+
+```text
+Mesa
+Fecha
+Hora
+Pedidos
+Total
+Estado
+```
+
+No eliminar físicamente los pedidos al cerrar la mesa.
+
+---
+
+# 53. DISEÑO VISUAL
+
+Quiero un diseño:
+
+* Profesional.
+* Moderno.
+* Limpio.
+* Similar a un TPV profesional.
+* No excesivamente recargado.
+* Responsive.
+
+Cliente:
+
+Diseñado primero para móvil.
+
+TPV:
+
+Diseñado primero para tablet/PC.
+
+Utilizar tarjetas, botones grandes, estados visuales y colores diferenciados.
+
+No quiero que parezca una web antigua.
+
+---
+
+# 54. RESPONSIVE
+
+Debe funcionar correctamente en:
+
+### Cliente
+
+* iPhone.
+* Android.
+* Pantallas pequeñas.
+* Pantallas grandes.
+
+### TPV
+
+* Tablet.
+* Portátil.
+* PC.
+* Monitor táctil.
+
+Adaptar automáticamente la interfaz.
+
+---
+
+# 55. MANEJO DE ERRORES
+
+Crear mensajes amigables.
+
+Ejemplos:
+
+```text
+No se ha podido cargar la carta.
+Inténtalo de nuevo.
+```
+
+```text
+No se ha podido enviar el pedido.
+Comprueba tu conexión.
+```
+
+```text
+Esta sesión ha finalizado.
+Escanea nuevamente el QR de la mesa.
+```
+
+```text
+Este producto ya no está disponible.
+```
+
+No mostrar errores técnicos de Firebase directamente al cliente.
+
+---
+
+# 56. SIN CONEXIÓN / CONEXIÓN INESTABLE
+
+Tener en cuenta que el móvil puede perder momentáneamente conexión.
+
+No permitir que el usuario crea que el pedido se ha enviado si realmente no se ha confirmado.
+
+Después de enviar:
+
+```text
+Pedido enviado correctamente
+```
+
+solo mostrarlo cuando Firebase haya confirmado correctamente la operación.
+
+Evitar duplicar pedidos si el usuario pulsa dos veces.
+
+Utilizar un estado:
+
+```text
+Enviando...
+```
+
+y deshabilitar temporalmente el botón.
+
+---
+
+# 57. PREVENCIÓN DE DOBLE PEDIDO
+
+Si el cliente pulsa:
+
+```text
+CONFIRMAR PEDIDO
+```
+
+varias veces rápidamente:
+
+NO crear varios pedidos idénticos.
+
+Implementar un mecanismo de idempotencia/clientRequestId.
+
+---
+
+# 58. FORMATO DE FECHAS
+
+Guardar las fechas como Firebase Timestamp.
+
+Mostrar al usuario:
+
+```text
+12:35
+```
+
+y cuando corresponda:
+
+```text
+13/08/2026 12:35
+```
+
+---
+
+# 59. CONFIGURACIÓN GENERAL
+
+Crear una sección de configuración donde posteriormente se puedan definir:
+
+```text
+Nombre del establecimiento
+Logo
+Moneda
+IVA
+Categorías
+Número máximo de mesas
+Sonido de nuevos pedidos
+```
+
+No es necesario implementar un sistema fiscal completo inicialmente.
+
+---
+
+# 60. IVA
+
+Preparar el modelo para soportar IVA.
+
+Cada producto podría tener:
+
+```text
+price
+tax
+```
+
+aunque inicialmente la interfaz puede mostrar simplemente el precio final.
+
+---
+
+# 61. DASHBOARD
+
+Crear un dashboard administrativo con información como:
+
+```text
+Mesas ocupadas
+Mesas libres
+Pedidos pendientes
+Pedidos en preparación
+Pedidos listos
+Ventas de la sesión/día
+```
+
+Ejemplo:
+
+```text
+MESAS OCUPADAS
+12
+
+PEDIDOS PENDIENTES
+5
+
+EN PREPARACIÓN
+8
+
+LISTOS
+3
+
+VENTAS HOY
+428,50 €
+```
+
+---
+
+# 62. ARQUITECTURA DE DATOS RECOMENDADA
+
+Como mínimo, cada entidad debería tener una estructura lógica similar a:
+
+## tables
+
+```text
+{
+  id,
+  number,
+  name,
+  qrIdentifier,
+  active,
+  currentSessionId,
+  createdAt,
+  updatedAt
+}
+```
+
+## sessions
+
+```text
+{
+  id,
+  tableId,
+  active,
+  createdAt,
+  expiresAt,
+  closedAt,
+  closedBy
+}
+```
+
+## accessTokens
+
+Si consideras necesario separar tokens:
+
+```text
+{
+  id,
+  sessionId,
+  tableId,
+  tokenHash,
+  createdAt,
+  expiresAt,
+  revokedAt
+}
+```
+
+NO guardar tokens sensibles innecesariamente en texto plano si se puede evitar.
+
+## orders
+
+```text
+{
+  id,
+  tableId,
+  sessionId,
+  clientTokenId,
+  items,
+  note,
+  total,
+  status,
+  createdAt,
+  updatedAt,
+  startedAt,
+  readyAt,
+  deliveredAt
+}
+```
+
+## products
+
+```text
+{
+  id,
+  name,
+  description,
+  price,
+  image,
+  categoryId,
+  available,
+  tax,
+  order,
+  createdAt,
+  updatedAt
+}
+```
+
+## categories
+
+```text
+{
+  id,
+  name,
+  description,
+  image,
+  active,
+  order,
+  createdAt,
+  updatedAt
+}
+```
+
+## payments
+
+```text
+{
+  id,
+  sessionId,
+  tableId,
+  amount,
+  method,
+  status,
+  payer,
+  createdAt,
+  createdBy
+}
+```
+
+---
+
+# 63. IMPORTANTE: SESIÓN VS PEDIDO
+
+No confundir:
+
+Una mesa puede tener:
+
+```text
+1 sesión
+```
+
+y esa sesión puede tener:
+
+```text
+muchos pedidos
+```
+
+Ejemplo:
+
+```text
+Mesa 4
+
+Sesión:
+13:00 - 15:30
+
+Pedido 1
+13:10
+
+Pedido 2
+13:25
+
+Pedido 3
+14:00
+
+Pedido 4
+14:40
+```
+
+La cuenta final debe sumar todos.
+
+---
+
+# 64. FLUJO COMPLETO DEL CLIENTE
+
+Implementar exactamente este flujo:
+
+```text
+1. Cliente escanea QR.
+
+2. Aplicación identifica la mesa.
+
+3. Comprueba si existe una sesión activa.
+
+4. Si no existe:
+   crea una nueva sesión.
+
+5. Si existe:
+   permite acceder a la sesión activa.
+
+6. Genera/gestiona el acceso seguro correspondiente.
+
+7. Cliente entra en la carta.
+
+8. Selecciona categoría.
+
+9. Selecciona productos.
+
+10. Añade cantidades.
+
+11. Añade notas.
+
+12. Abre carrito.
+
+13. Comprueba total.
+
+14. Confirma pedido.
+
+15. Firebase registra el pedido.
+
+16. TPV recibe automáticamente el pedido.
+
+17. Cocina lo prepara.
+
+18. Cocina cambia el estado.
+
+19. Camarero lo entrega.
+
+20. Pedido queda como ENTREGADO.
+
+21. El pedido continúa dentro de la cuenta de la mesa.
+
+22. Cliente puede volver a pedir.
+
+23. Se crean nuevos pedidos dentro de la misma sesión.
+
+24. Cliente termina.
+
+25. Camarero abre cuenta.
+
+26. Selecciona método de división.
+
+27. Registra pagos.
+
+28. Cierra mesa.
+
+29. Sesión pasa a inactiva.
+
+30. Tokens anteriores quedan invalidados.
+
+31. Mesa queda libre.
+
+32. El siguiente cliente vuelve a escanear el mismo QR.
+
+33. Se crea una nueva sesión.
+```
+
+---
+
+# 65. FLUJO COMPLETO DEL TPV
+
+```text
+1. Empleado inicia sesión.
+
+2. Accede al TPV.
+
+3. Ve las mesas.
+
+4. Una mesa recibe un pedido.
+
+5. Aparece automáticamente.
+
+6. Se muestra:
+   - Mesa
+   - Hora
+   - Productos
+   - Cantidades
+   - Nota
+   - Total
+
+7. Cocina pulsa PREPARANDO.
+
+8. Cocina pulsa LISTO.
+
+9. Camarero pulsa ENTREGADO.
+
+10. El pedido permanece en la cuenta.
+
+11. Cliente puede hacer otro pedido.
+
+12. Aparece otro pedido.
+
+13. Al terminar la mesa:
+    abrir cuenta.
+
+14. Ver todos los pedidos.
+
+15. Ver total.
+
+16. Dividir cuenta.
+
+17. Registrar pagos.
+
+18. Cerrar mesa.
+
+19. Invalidar sesión.
+
+20. Mesa vuelve a estar libre.
+```
+
+---
+
+# 66. REQUISITOS DE CALIDAD DEL CÓDIGO
+
+El código debe:
+
+* Ser limpio.
+* Ser modular.
+* Ser mantenible.
+* Tener comentarios únicamente donde aporten valor.
+* No duplicar código innecesariamente.
+* Utilizar componentes reutilizables.
+* Separar lógica de Firebase de la interfaz.
+* Utilizar composables/services.
+* Tener tipos/interfaces si se utiliza TypeScript.
+* Evitar secretos en el frontend.
+* Evitar credenciales hardcodeadas.
+* Tener variables de entorno.
+
+---
+
+# 67. README
+
+Crear un README.md completo explicando:
+
+## Instalación
+
+```bash
+npm install
+```
+
+## Desarrollo
+
+```bash
+npm run dev
+```
+
+## Configuración Firebase
+
+Explicar paso a paso:
+
+1. Crear proyecto Firebase.
+2. Activar Firestore.
+3. Activar Authentication.
+4. Crear usuarios.
+5. Configurar Storage si se utiliza.
+6. Crear las variables `.env`.
+7. Configurar Security Rules.
+8. Configurar índices si son necesarios.
+
+## Build
+
+```bash
+npm run build
+```
+
+## Firebase Hosting
+
+Explicar:
+
+```bash
+firebase login
+firebase init
+firebase deploy
+```
+
+---
+
+# 68. DATOS DE PRUEBA
+
+Crear un sistema sencillo para poder insertar datos iniciales/demo.
+
+Por ejemplo:
+
+### Categorías
+
+```text
+Bebidas
+Cafés
+Bocadillos
+Hamburguesas
+Raciones
+```
+
+### Productos
+
+```text
+Coca-Cola
+2,00 €
+
+Agua
+1,50 €
+
+Café con leche
+1,50 €
+
+Bocadillo de tortilla
+5,50 €
+
+Hamburguesa
+8,00 €
+```
+
+### Mesas
+
+Crear:
+
+```text
+Mesa 1
+Mesa 2
+...
+Mesa 10
+```
+
+El sistema debe poder ampliarse posteriormente.
+
+---
+
+# 69. NO HACER
+
+NO quiero:
+
+* PHP.
+* MySQL.
+* WordPress.
+* Backend tradicional innecesario.
+* jQuery.
+* Código en un único HTML gigante.
+* Credenciales Firebase escritas directamente.
+* Datos simulados como solución definitiva.
+* LocalStorage como base de datos principal.
+* Actualizaciones mediante F5.
+* Polling continuo si Firestore realtime lo puede solucionar.
+* Pedidos almacenados únicamente en el navegador.
+
+---
+
+# 70. IMPORTANTE SOBRE GITHUB
+
+Quiero que el proyecto sea totalmente compatible con GitHub.
+
+Crear:
+
+```text
+.gitignore
+.env.example
+README.md
+```
+
+No incluir:
+
+```text
+.env
+```
+
+ni secretos.
+
+Preparar el proyecto para que pueda subirlo a un repositorio GitHub y posteriormente desplegarlo.
+
+---
+
+# 71. VARIABLES DE ENTORNO
+
+Utilizar:
+
+```text
+VITE_FIREBASE_API_KEY
+VITE_FIREBASE_AUTH_DOMAIN
+VITE_FIREBASE_PROJECT_ID
+VITE_FIREBASE_STORAGE_BUCKET
+VITE_FIREBASE_MESSAGING_SENDER_ID
+VITE_FIREBASE_APP_ID
+```
+
+Si Cloud Functions necesita variables privadas, utilizar el sistema recomendado por Firebase y nunca exponer secretos privados en el frontend.
+
+---
+
+# 72. INSTALACIÓN Y EJECUCIÓN
+
+Al finalizar quiero poder hacer:
+
+```bash
+npm install
+npm run dev
+```
+
+y tener todo funcionando.
+
+Posteriormente:
+
+```bash
+npm run build
+```
+
+sin errores.
+
+---
+
+# 73. ENTREGABLES OBLIGATORIOS
+
+Quiero que generes TODO el código necesario.
+
+No quiero solamente ejemplos.
+
+Debes proporcionar:
+
+* package.json
+* configuración Vite
+* configuración Vue
+* Vue Router
+* Firebase
+* Firestore services
+* Authentication
+* componentes
+* vistas cliente
+* vistas TPV
+* vistas cocina
+* administración
+* gestión de mesas
+* gestión de productos
+* gestión de categorías
+* sesiones
+* tokens
+* pedidos
+* cuenta
+* división de cuenta
+* pagos
+* reglas Firestore
+* Cloud Functions si son necesarias
+* README
+* .env.example
+* .gitignore
+* datos de prueba/seeding
+* QR de mesas
+* sistema responsive.
+
+---
+
+# 74. NO SIMULAR FUNCIONALIDADES
+
+No quiero que una funcionalidad parezca funcionar pero realmente no esté conectada.
+
+Por ejemplo:
+
+NO crear:
+
+```javascript
+const pedidos = [
+  ...
+]
+```
+
+como sustituto permanente de Firestore.
+
+Todo lo relacionado con:
+
+* productos
+* categorías
+* mesas
+* sesiones
+* pedidos
+* estados
+* pagos
+* usuarios
+
+debe utilizar Firebase.
+
+---
+
+# 75. PRIMERA VERSIÓN FUNCIONAL
+
+Prioriza primero que funcione correctamente:
+
+```text
+QR
+↓
+Mesa
+↓
+Sesión
+↓
+Carta
+↓
+Carrito
+↓
+Pedido
+↓
+Firestore
+↓
+TPV realtime
+↓
+Estados
+↓
+Entregado
+↓
+Cuenta
+↓
+División
+↓
+Pago
+↓
+Cerrar mesa
+↓
+Invalidar sesión
+```
+
+Después añade mejoras visuales.
+
+No sacrifiques la funcionalidad por intentar hacer una interfaz excesivamente sofisticada.
+
+---
+
+# 76. PRUEBAS
+
+Crear una estrategia de pruebas manuales para comprobar:
+
+### TEST 1
+
+Escanear Mesa 1.
+
+Debe crear una sesión.
+
+### TEST 2
+
+Realizar un pedido.
+
+Debe aparecer automáticamente en TPV.
+
+### TEST 3
+
+Cambiar estado.
+
+El cliente debe verlo actualizado.
+
+### TEST 4
+
+Realizar un segundo pedido.
+
+Debe pertenecer a la misma sesión.
+
+### TEST 5
+
+Cerrar mesa.
+
+La sesión debe quedar invalidada.
+
+### TEST 6
+
+Intentar utilizar la URL antigua.
+
+Debe rechazarse.
+
+### TEST 7
+
+Escanear nuevamente QR.
+
+Debe permitir crear/entrar en una nueva sesión.
+
+### TEST 8
+
+Dos móviles en la misma mesa.
+
+Ambos deben poder realizar pedidos dentro de la misma sesión.
+
+### TEST 9
+
+Dos móviles realizan pedidos simultáneamente.
+
+No debe perderse ningún pedido.
+
+### TEST 10
+
+Dividir una cuenta entre 4 personas.
+
+El cálculo debe ser correcto.
+
+### TEST 11
+
+Asignar productos individualmente.
+
+Cada persona debe tener su propio total correcto.
+
+### TEST 12
+
+Intentar manipular el precio desde el navegador.
+
+Firebase/backend debe rechazarlo o recalcularlo correctamente.
+
+---
+
+# 77. EXPERIENCIA FINAL ESPERADA
+
+El resultado final debe sentirse como un sistema profesional de restaurante.
+
+El cliente no debería necesitar instalar ninguna aplicación.
+
+Simplemente:
+
+```text
+ESCANEAR QR
+```
+
+y empezar a pedir.
+
+El trabajador debe poder utilizar el TPV desde:
+
+```text
+Tablet
+PC
+Portátil
+Pantalla táctil
+```
+
+y recibir todo en tiempo real.
+
+El sistema debe poder utilizarse posteriormente en un establecimiento con:
+
+```text
+10 mesas
+20 mesas
+40 mesas
+60 mesas
+100 mesas
+```
+
+sin que la arquitectura dependa de un número concreto de mesas.
+
+---
+
+# 78. PRIORIDAD ABSOLUTA
+
+Si tienes que tomar decisiones técnicas, prioriza en este orden:
+
+1. Seguridad.
+2. Integridad de los pedidos.
+3. Funcionamiento en tiempo real.
+4. Correcta gestión de sesiones y mesas.
+5. Correcto cálculo de cuentas.
+6. Facilidad de mantenimiento.
+7. Responsive.
+8. Diseño visual.
+
+No simplifiques el sistema de sesiones, pedidos o seguridad únicamente para reducir código.
+
+---
+
+# 79. RESULTADO QUE QUIERO DE TI
+
+Quiero que actúes como un desarrollador senior especializado en:
+
+* Vue 3
+* TypeScript
+* Firebase
+* Firestore
+* aplicaciones realtime
+* TPV
+* sistemas de pedidos
+* seguridad web.
+
+Analiza primero la arquitectura completa.
+
+Después crea el proyecto entero.
+
+Si consideras que alguna decisión de este prompt puede mejorarse técnicamente, puedes modificarla siempre que mantengas el comportamiento funcional solicitado.
+
+No elimines ninguna funcionalidad importante.
+
+El proyecto debe quedar preparado para que posteriormente yo pueda proporcionarte las credenciales de Firebase y ponerlo en funcionamiento.
+
+Cuando termines, proporciona también:
+
+1. Estructura final de carpetas.
+2. Todos los archivos necesarios.
+3. Instrucciones exactas de instalación.
+4. Configuración de Firebase.
+5. Configuración de Firestore.
+6. Security Rules.
+7. Cloud Functions, si son necesarias.
+8. Cómo crear el primer usuario administrador.
+9. Cómo crear las mesas.
+10. Cómo generar los QR.
+11. Cómo desplegar en Firebase Hosting.
+12. Cómo subir el proyecto a GitHub.
+13. Cómo probar el sistema completo.
+
+IMPORTANTE:
+
+No quiero una demostración visual sin backend.
+
+Quiero una aplicación funcional conectada a Firebase y preparada para producción.

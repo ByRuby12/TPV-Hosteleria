@@ -15,7 +15,7 @@
             ? path.slice(siteBase.length) || '/'
             : '/'
 
-        window.location.replace(`${appBase}/?redirect=${encodeURIComponent(target)}`)
+        window.location.replace(`${appBase}/#${target}`)
       })()
     </script>
   </head>

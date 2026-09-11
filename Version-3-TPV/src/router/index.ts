@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHashHistory } from 'vue-router'
 import { getRoleLandingRoute, useAuthStore } from '../stores/authStore'
 import HomeView from '../views/client/HomeView.vue'
 import CartView from '../views/client/CartView.vue'
@@ -16,7 +16,7 @@ import AdminView from '../views/admin/AdminView.vue'
 const authStore = useAuthStore()
 
 const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
+  history: createWebHashHistory(import.meta.env.BASE_URL),
   routes: [
     { path: '/', redirect: '/login' },
     { path: '/carta', name: 'menu', component: HomeView },

@@ -14,7 +14,7 @@
           ? (normalized.slice(base.length) || '/') + search
           : pathname + search
 
-        const target = `${base}/?redirect=${encodeURIComponent(targetPath)}`
+        const target = `${base}/#${targetPath}`
         window.location.replace(target)
       })()
     </script>

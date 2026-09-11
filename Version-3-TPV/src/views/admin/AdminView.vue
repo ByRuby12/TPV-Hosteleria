@@ -716,9 +716,20 @@
           <article v-for="image in paginatedGalleryImages" :key="image.id" class="gallery-admin-item">
             <img :src="image.url" :alt="image.name" />
             <div class="gallery-admin-item-info">
-              <strong>{{ image.name }}</strong>
+              <input
+                v-if="galleryEditingId === image.id"
+                v-model="galleryEditingName"
+                class="gallery-name-input"
+                type="text"
+                aria-label="Nombre de la URL"
+                @keyup.enter="saveGalleryName(image)"
+              />
+              <strong v-else>{{ image.name }}</strong>
               <div class="product-actions">
                 <button class="chip" type="button" @click="copyGalleryUrl(image.url)">Copiar URL</button>
+                <button v-if="galleryEditingId !== image.id" class="chip" type="button" @click="startGalleryNameEdit(image)">Editar nombre</button>
+                <button v-else class="chip" type="button" @click="saveGalleryName(image)">Guardar nombre</button>
+                <button v-if="galleryEditingId === image.id" class="chip" type="button" @click="cancelGalleryNameEdit">Cancelar</button>
                 <button v-if="!image.id.startsWith('local-')" class="danger-btn" type="button" :disabled="galleryDeletingId === image.id" @click="removeGalleryImage(image)">
                   {{ galleryDeletingId === image.id ? 'Borrando...' : 'Borrar URL' }}
                 </button>
@@ -839,6 +850,8 @@ const galleryImages = ref<any[]>([])
 const galleryFeedback = ref('')
 const newGalleryUrl = ref('')
 const galleryDeletingId = ref('')
+const galleryEditingId = ref('')
+const galleryEditingName = ref('')
 const exampleGalleryUrls = [
   { id: 'example-gallery-paella', name: 'Ejemplo - Paella de marisco', url: 'https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?w=1200&q=80' },
   { id: 'example-gallery-burger', name: 'Ejemplo - Burger clásica', url: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=1200&q=80' },
@@ -1623,6 +1636,31 @@ const addGalleryUrl = async () => {
 const copyGalleryUrl = async (url: string) => {
   await navigator.clipboard?.writeText(url)
   galleryFeedback.value = 'URL copiada. Puedes pegarla en cualquier campo de imagen.'
+}
+
+const startGalleryNameEdit = (image: any) => {
+  galleryEditingId.value = image.id
+  galleryEditingName.value = image.name
+}
+
+const cancelGalleryNameEdit = () => {
+  galleryEditingId.value = ''
+  galleryEditingName.value = ''
+}
+
+const saveGalleryName = async (image: any) => {
+  const name = galleryEditingName.value.trim()
+  if (!name || !db || image.id.startsWith('local-')) return
+
+  try {
+    await upsertDocument('galleryImages', image.id, { name, updatedAt: new Date().toISOString() })
+    galleryImages.value = galleryImages.value.map((item) => item.id === image.id ? { ...item, name } : item)
+    galleryFeedback.value = 'Nombre de URL actualizado en Firebase.'
+    cancelGalleryNameEdit()
+  } catch (error) {
+    console.error('No se pudo actualizar el nombre de la URL.', error)
+    galleryFeedback.value = 'No se pudo actualizar el nombre.'
+  }
 }
 
 const removeGalleryImage = async (image: any) => {
@@ -2684,7 +2722,20 @@ h1 {
   white-space: nowrap;
 }
 
+.gallery-name-input {
+  width: 100%;
+  min-width: 0;
+  padding: 6px 8px;
+  border: 1px solid rgba(249, 115, 22, 0.5);
+  border-radius: 7px;
+  background: rgba(15, 23, 42, 0.8);
+  color: #fff;
+  font-size: 0.78rem;
+}
+
 .gallery-admin-item-info .product-actions {
+  display: flex;
+  flex-wrap: wrap;
   gap: 6px;
 }
 

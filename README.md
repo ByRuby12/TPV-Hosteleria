@@ -206,5 +206,4 @@ Los datos operativos deben vivir en Firebase cuando la aplicación se ejecuta en
 ## Documentación relacionada
 
 - [FIREBASE.md](FIREBASE.md): configuración de Firebase, Firestore y despliegue.
-- [seed-firestore.md](seed-firestore.md): carga inicial de datos.
-- `scripts/`: herramientas de mantenimiento y ejemplos de datos.
+- [seed-firestore.md](seed-firestore.md): referencia histórica de carga inicial de datos.

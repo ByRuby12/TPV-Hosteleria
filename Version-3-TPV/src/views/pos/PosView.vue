@@ -569,7 +569,7 @@ const getStatusEmoji = (status: OrderRecord['status']) => {
   min-height: 100vh;
   height: 100vh;
   overflow: hidden;
-  background: linear-gradient(135deg, #f0f4f8 0%, #d9e2ec 100%);
+  background: #eef2f6;
   min-width: 0;
 }
 
@@ -599,20 +599,20 @@ const getStatusEmoji = (status: OrderRecord['status']) => {
 
 /* ==================== SIDEBAR ==================== */
 .sidebar {
-  background: linear-gradient(180deg, #1f2937 0%, #111827 100%);
+  background: #172235;
   color: white;
   padding: 0;
   display: flex;
   flex-direction: column;
   height: 100vh;
-  box-shadow: 2px 0 20px rgba(0, 0, 0, 0.2);
+  box-shadow: 8px 0 24px rgba(15, 23, 42, 0.1);
   overflow: hidden;
   min-width: 0;
 }
 
 .sidebar-header {
-  padding: 24px 20px;
-  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+  padding: 24px 20px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .sidebar-header h2 {
@@ -651,7 +651,7 @@ const getStatusEmoji = (status: OrderRecord['status']) => {
 }
 
 .table-card {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.06);
   padding: 14px;
   border-radius: 12px;
   display: flex;
@@ -659,7 +659,7 @@ const getStatusEmoji = (status: OrderRecord['status']) => {
   gap: 12px;
   cursor: pointer;
   transition: all 0.3s ease;
-  border: 2px solid transparent;
+  border: 1px solid transparent;
   backdrop-filter: blur(10px);
 }
 
@@ -727,7 +727,7 @@ const getStatusEmoji = (status: OrderRecord['status']) => {
 
 /* ==================== CONTENT ==================== */
 .content {
-  padding: 32px;
+  padding: 28px clamp(16px, 3vw, 40px) 40px;
   overflow-y: auto;
   overflow-x: hidden;
   display: flex;
@@ -746,10 +746,11 @@ const getStatusEmoji = (status: OrderRecord['status']) => {
   justify-content: space-between;
   align-items: flex-start;
   background: white;
-  padding: 32px;
-  border-radius: 18px;
+  padding: 26px 28px;
+  border-radius: 16px;
   margin-bottom: 24px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
   gap: 32px;
 }
 
@@ -768,10 +769,11 @@ const getStatusEmoji = (status: OrderRecord['status']) => {
 }
 
 .topbar h1 {
-  font-size: 2rem;
+  font-size: clamp(1.55rem, 2.6vw, 2rem);
   font-weight: 800;
   color: #1f2937;
   margin-bottom: 6px;
+  letter-spacing: -0.03em;
 }
 
 .topbar-subtitle {
@@ -807,7 +809,8 @@ const getStatusEmoji = (status: OrderRecord['status']) => {
 .stat-mini {
   text-align: center;
   padding: 16px;
-  background: #f3f4f6;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
   border-radius: 12px;
   transition: all 0.3s ease;
 }
@@ -835,7 +838,7 @@ const getStatusEmoji = (status: OrderRecord['status']) => {
   display: block;
   font-size: 1.8rem;
   font-weight: 800;
-  color: #1f2937;
+  color: #0f172a;
   margin-bottom: 4px;
 }
 
@@ -849,7 +852,11 @@ const getStatusEmoji = (status: OrderRecord['status']) => {
 .filters {
   display: flex;
   gap: 12px;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
+  padding: 4px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.72);
   padding-bottom: 16px;
   overflow-x: auto;
 }
@@ -865,9 +872,9 @@ const getStatusEmoji = (status: OrderRecord['status']) => {
 
 .filter-btn {
   padding: 10px 18px;
-  border: 2px solid #e5e7eb;
-  background: white;
-  border-radius: 10px;
+  border: 1px solid transparent;
+  background: transparent;
+  border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -881,7 +888,7 @@ const getStatusEmoji = (status: OrderRecord['status']) => {
 }
 
 .filter-btn.active {
-  background: #3b82f6;
+  background: #1d4ed8;
   color: white;
   border-color: #3b82f6;
 }
@@ -898,9 +905,10 @@ const getStatusEmoji = (status: OrderRecord['status']) => {
 
 .order-card {
   background: white;
-  border-radius: 16px;
+  border-radius: 14px;
   overflow: hidden;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.07);
   transition: all 0.3s ease;
   animation: cardSlideIn 0.4s ease;
   position: relative;
@@ -920,7 +928,7 @@ const getStatusEmoji = (status: OrderRecord['status']) => {
 
 .order-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.12);
 }
 
 .card-status-bar {
@@ -994,6 +1002,10 @@ const getStatusEmoji = (status: OrderRecord['status']) => {
 
 .card-items {
   padding-bottom: 12px !important;
+  background: #f8fafc;
+  border-radius: 10px;
+  margin: 0 18px 12px;
+  padding: 12px !important;
 }
 
 .card-items h4 {
@@ -1014,7 +1026,7 @@ const getStatusEmoji = (status: OrderRecord['status']) => {
 .item {
   padding: 6px 0;
   font-size: 0.95rem;
-  color: #374151;
+  color: #1e293b;
   display: flex;
   gap: 8px;
   line-height: 1.4;
@@ -1205,7 +1217,7 @@ const getStatusEmoji = (status: OrderRecord['status']) => {
 .status-btn {
   width: calc(100% + 36px);
   margin: 0 -18px -0px;
-  padding: 14px 18px;
+  padding: 13px 18px;
   border: none;
   background: #f59e0b;
   color: white;
@@ -1214,6 +1226,7 @@ const getStatusEmoji = (status: OrderRecord['status']) => {
   transition: all 0.3s ease;
   border-top: 1px solid #e5e7eb;
   font-size: 0.95rem;
+  letter-spacing: 0.01em;
 }
 
 .status-btn.payment {

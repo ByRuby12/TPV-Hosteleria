@@ -80,6 +80,16 @@
               <p class="product-desc">{{ product.description || 'Producto de la carta.' }}</p>
 
               <div class="product-footer">
+                <div v-if="product.allergens?.length" class="allergens">
+                  <span
+                    v-for="allergen in product.allergens"
+                    :key="`${product.id}-${allergen}`"
+                    class="allergen-icon"
+                    :title="`Alérgeno: ${allergen}`"
+                  >
+                    <img :src="getAllergenAsset(allergen)" :alt="allergen" />
+                  </span>
+                </div>
                 <div class="product-actions">
                   <button
                     class="qty-btn qty-decrease"
@@ -274,6 +284,33 @@ const productImageStyle = (product: any) => {
     backgroundSize: 'cover',
     backgroundPosition: 'center',
   }
+}
+
+const getAllergenAsset = (allergen: string) => {
+  const normalized = String(allergen).trim().toLowerCase()
+  const allergenFileMap: Record<string, string> = {
+    altramuces: 'altramuces',
+    apio: 'apio',
+    cacahuetes: 'cacahuetes',
+    crustaceos: 'crustaceos',
+    frutos: 'frutos',
+    gluten: 'gluten',
+    huevo: 'huevos',
+    huevos: 'huevos',
+    lactosa: 'lacteos',
+    lacteos: 'lacteos',
+    moluscos: 'moluscos',
+    mostaza: 'mostaza',
+    marisco: 'crustaceos',
+    pescado: 'pescado',
+    sesamo: 'sesamo',
+    soja: 'soja',
+    sulfitos: 'sulfitos',
+  }
+
+  const resolved = allergenFileMap[normalized] || normalized
+  const publicBase = import.meta.env.DEV ? '/' : import.meta.env.BASE_URL
+  return normalized ? `${publicBase}images/alergenos/${resolved}.png` : ''
 }
 
 const uiText = computed(() => ({

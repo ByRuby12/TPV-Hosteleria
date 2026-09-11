@@ -1,7 +1,6 @@
 import { initializeApp } from 'firebase/app'
 import { getAuth, type Auth } from 'firebase/auth'
 import { getFirestore, type Firestore } from 'firebase/firestore'
-import { getStorage, type FirebaseStorage } from 'firebase/storage'
 import { firebaseConfigStatic } from '../firebase-config'
 
 // Try to build config from environment variables first (development)
@@ -25,7 +24,6 @@ const isFirebaseConfigured = requiredFields.every((field) => {
 let app: ReturnType<typeof initializeApp> | null = null
 let auth: Auth | null = null
 let db: Firestore | null = null
-let storage: FirebaseStorage | null = null
 
 if (isFirebaseConfigured) {
   console.log('[Firebase] ✅ Initializing Firebase...')
@@ -33,7 +31,6 @@ if (isFirebaseConfigured) {
   app = initializeApp(firebaseConfig)
   auth = getAuth(app)
   db = getFirestore(app)
-  storage = getStorage(app)
 
   console.log('[Firebase] ✅ Firebase initialized successfully!')
   console.log('[Firebase] Firestore ready:', db ? '✅' : '❌')
@@ -46,4 +43,4 @@ if (isFirebaseConfigured) {
   })
 }
 
-export { app, auth, db, storage }
+export { app, auth, db }

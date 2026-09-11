@@ -431,12 +431,7 @@ const heroBannerStyle = computed(() => {
   }
 })
 
-const galleryImages = ref([
-  `${import.meta.env.DEV ? '/' : import.meta.env.BASE_URL}images/imagen1.jpg`,
-  `${import.meta.env.DEV ? '/' : import.meta.env.BASE_URL}images/banner-bar.jpeg`,
-  `${import.meta.env.DEV ? '/' : import.meta.env.BASE_URL}images/logo-bar.png`,
-  `${import.meta.env.DEV ? '/' : import.meta.env.BASE_URL}images/icono_web.png`,
-])
+const galleryImages = ref<string[]>([])
 
 const visibleCategories = computed(() => [
   ...categories.value,
@@ -537,7 +532,7 @@ const hydrateGallery = async () => {
       .map((image) => image.url)
       .filter(Boolean)
 
-    galleryImages.value = [...galleryImages.value, ...uploadedUrls]
+    galleryImages.value = uploadedUrls
   } catch (error) {
     console.warn('No se pudo cargar la galería de imágenes.', error)
   }

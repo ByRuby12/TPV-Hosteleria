@@ -702,14 +702,14 @@
       <div v-else-if="selectedModule === 'gallery'" class="management-card gallery-admin-card">
         <div class="product-create-form">
           <div class="form-header">
-            <h3>Biblioteca de imágenes</h3>
-            <p>Sube imágenes una a una y reutiliza sus URLs en productos, banner o logo.</p>
+            <h3>Biblioteca de URLs</h3>
+            <p>Guarda enlaces de Internet y reutilízalos en productos, banner o logo.</p>
           </div>
-          <label class="upload-dropzone">
-            <span>Seleccionar imagen</span>
-            <small>JPG, PNG o WEBP · máximo 5 MB</small>
-            <input type="file" accept="image/jpeg,image/png,image/webp" @change="uploadGalleryImage" />
-          </label>
+          <div class="gallery-url-form">
+            <input v-model="newGalleryUrl" type="url" placeholder="https://ejemplo.com/imagen.jpg" @keyup.enter="addGalleryUrl" />
+            <button class="ghost-btn" type="button" @click="addGalleryUrl">Añadir URL</button>
+          </div>
+          <small class="field-hint">La imagen se mostrará desde su dirección original. No se suben archivos a Firebase.</small>
           <p v-if="galleryFeedback" class="field-hint">{{ galleryFeedback }}</p>
         </div>
         <div v-if="galleryImages.length" class="gallery-admin-grid">
@@ -719,9 +719,10 @@
               <strong>{{ image.name }}</strong>
               <div class="product-actions">
                 <button class="chip" type="button" @click="copyGalleryUrl(image.url)">Copiar URL</button>
-                <button v-if="image.storagePath" class="danger-btn" type="button" :disabled="galleryDeletingId === image.id" @click="removeGalleryImage(image)">
-                  {{ galleryDeletingId === image.id ? 'Eliminando...' : 'Eliminar foto' }}
+                <button v-if="!image.id.startsWith('local-')" class="danger-btn" type="button" :disabled="galleryDeletingId === image.id" @click="removeGalleryImage(image)">
+                  {{ galleryDeletingId === image.id ? 'Borrando...' : 'Borrar URL' }}
                 </button>
+                <span v-else class="gallery-static-label">Archivo local</span>
               </div>
             </div>
           </article>
@@ -784,8 +785,7 @@ import { computed, ref, watch, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import QRCode from 'qrcode'
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, LineController, Title, Tooltip, Legend, Filler } from 'chart.js'
-import { db, storage } from '../../lib/firebase'
-import { deleteObject, getDownloadURL, ref as storageRef, uploadBytes } from 'firebase/storage'
+import { db } from '../../lib/firebase'
 import { createDocument, deleteDocument, getCollectionSnapshot, getDocumentById, upsertDocument } from '../../services/firebase/firestore'
 import { useAuthStore } from '../../stores/authStore'
 import { useCompanySettings } from '../../stores/companySettings'
@@ -835,15 +835,17 @@ const categories = ref<any[]>([])
 const products = ref<any[]>([])
 const tables = ref<any[]>(storeTables.value ?? [])
 const suppliers = ref<any[]>([])
-const localGalleryImages = [
-  { id: 'local-imagen1', name: 'imagen1.jpg', url: `${import.meta.env.DEV ? '/' : import.meta.env.BASE_URL}images/imagen1.jpg` },
-  { id: 'local-banner-bar', name: 'banner-bar.jpeg', url: `${import.meta.env.DEV ? '/' : import.meta.env.BASE_URL}images/banner-bar.jpeg` },
-  { id: 'local-logo-bar', name: 'logo-bar.png', url: `${import.meta.env.DEV ? '/' : import.meta.env.BASE_URL}images/logo-bar.png` },
-  { id: 'local-icono-web', name: 'icono_web.png', url: `${import.meta.env.DEV ? '/' : import.meta.env.BASE_URL}images/icono_web.png` },
-]
-const galleryImages = ref<any[]>(localGalleryImages)
+const galleryImages = ref<any[]>([])
 const galleryFeedback = ref('')
+const newGalleryUrl = ref('')
 const galleryDeletingId = ref('')
+const exampleGalleryUrls = [
+  { id: 'example-gallery-paella', name: 'Ejemplo - Paella de marisco', url: 'https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?w=1200&q=80' },
+  { id: 'example-gallery-burger', name: 'Ejemplo - Burger clásica', url: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=1200&q=80' },
+  { id: 'example-gallery-pasta', name: 'Ejemplo - Pasta carbonara', url: 'https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?w=1200&q=80' },
+  { id: 'example-gallery-dessert', name: 'Ejemplo - Tarta de queso', url: 'https://images.unsplash.com/photo-1551024601-bec78aea704b?w=1200&q=80' },
+  { id: 'example-gallery-restaurant', name: 'Ejemplo - Interior del restaurante', url: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=1200&q=80' },
+]
 const galleryPage = ref(1)
 const galleryPageSize = 5
 const galleryPageCount = computed(() => Math.max(1, Math.ceil(galleryImages.value.length / galleryPageSize)))
@@ -881,7 +883,7 @@ const hydrateAdminData = async () => {
       products.value = productSnapshots
     }
     suppliers.value = supplierSnapshots
-    galleryImages.value = [...localGalleryImages, ...gallerySnapshots]
+    galleryImages.value = gallerySnapshots
     if (tableSnapshots.length) {
       const uniqueTables = deduplicateTables(tableSnapshots)
       const uniqueIds = new Set(uniqueTables.map((table) => table.id))
@@ -909,6 +911,21 @@ const hydrateAdminData = async () => {
   }
 }
 
+const seedExampleGalleryUrls = async () => {
+  if (!db || galleryImages.value.length) return
+
+  try {
+    const now = new Date().toISOString()
+    await Promise.all(exampleGalleryUrls.map((image) =>
+      upsertDocument('galleryImages', image.id, { ...image, createdAt: now, updatedAt: now }),
+    ))
+    galleryImages.value = exampleGalleryUrls.map((image) => ({ ...image, createdAt: now, updatedAt: now }))
+    galleryFeedback.value = 'URLs de ejemplo guardadas en Firebase.'
+  } catch (error) {
+    console.error('No se pudieron guardar las URLs de ejemplo.', error)
+  }
+}
+
 watch(categories, async () => {
   // Stored only in Firebase; localStorage is not used for business data.
 }, { deep: true })
@@ -928,6 +945,7 @@ onMounted(async () => {
     loadCompanySettings(),
     loadCashRegister(),
   ])
+  await seedExampleGalleryUrls()
 })
 
 const selectedModule = ref<'categories' | 'products' | 'tables' | 'users' | 'company' | 'gallery' | 'suppliers' | 'payment-history' | 'cash-register' | 'data-management' | 'statistics'>('tables')
@@ -1576,40 +1594,29 @@ const normalizeAdminImage = (value: string) => {
   return `${publicBase}${value.replace(/^\.\//, '').replace(/^\//, '')}`
 }
 
-const uploadGalleryImage = async (event: Event) => {
-  const input = event.target as HTMLInputElement
-  const file = input.files?.[0]
-  input.value = ''
+const addGalleryUrl = async () => {
+  const url = newGalleryUrl.value.trim()
   galleryFeedback.value = ''
 
-  if (!file) return
-  if (!storage || !db) {
-    galleryFeedback.value = 'Firebase Storage no está disponible.'
+  if (!/^https?:\/\/\S+$/i.test(url)) {
+    galleryFeedback.value = 'Introduce una URL válida que empiece por http:// o https://.'
     return
   }
-  if (!file.type.startsWith('image/')) {
-    galleryFeedback.value = 'Selecciona un archivo de imagen.'
-    return
-  }
-  if (file.size > 5 * 1024 * 1024) {
-    galleryFeedback.value = 'La imagen no puede superar los 5 MB.'
+  if (!db) {
+    galleryFeedback.value = 'No se puede guardar la URL sin conexión con Firestore.'
     return
   }
 
   try {
-    galleryFeedback.value = 'Subiendo imagen...'
-    const safeName = file.name.toLowerCase().replace(/[^a-z0-9.-]+/g, '-')
-    const storagePath = `images/galeria/${Date.now()}-${safeName}`
-    const imageRef = storageRef(storage, storagePath)
-    await uploadBytes(imageRef, file, { contentType: file.type })
-    const url = await getDownloadURL(imageRef)
-    const image = { name: file.name, url, storagePath, createdAt: new Date().toISOString() }
-    await upsertDocument('galleryImages', storagePath.replace(/[^a-zA-Z0-9-]/g, '-'), image)
-    galleryImages.value = [...galleryImages.value, { ...image, id: storagePath.replace(/[^a-zA-Z0-9-]/g, '-') }]
-    galleryFeedback.value = 'Imagen añadida correctamente.'
+    const imageId = `url-${Date.now()}`
+    const image = { name: url, url, createdAt: new Date().toISOString() }
+    await upsertDocument('galleryImages', imageId, image)
+    galleryImages.value = [...galleryImages.value, { ...image, id: imageId }]
+    newGalleryUrl.value = ''
+    galleryFeedback.value = 'URL guardada correctamente en Firebase.'
   } catch (error) {
-    console.error('No se pudo subir la imagen de galería.', error)
-    galleryFeedback.value = 'No se pudo subir la imagen.'
+    console.error('No se pudo guardar la URL de galería.', error)
+    galleryFeedback.value = 'No se pudo guardar la URL. Revisa los permisos del administrador.'
   }
 }
 
@@ -1619,22 +1626,19 @@ const copyGalleryUrl = async (url: string) => {
 }
 
 const removeGalleryImage = async (image: any) => {
-  if (!db || !storage || !image?.storagePath) return
-  if (!window.confirm(`¿Quieres eliminar la foto "${image.name}"? Esta acción no se puede deshacer.`)) return
+  if (!image?.id) return
+  if (!window.confirm(`¿Quieres borrar esta URL? Esta acción no se puede deshacer.`)) return
 
   try {
     galleryDeletingId.value = image.id
-    try {
-      await deleteObject(storageRef(storage, image.storagePath))
-    } catch (error: any) {
-      if (error?.code !== 'storage/object-not-found') throw error
+    if (db && !image.id.startsWith('local-')) {
+      await deleteDocument('galleryImages', image.id)
     }
-    await deleteDocument('galleryImages', image.id)
     galleryImages.value = galleryImages.value.filter((item) => item.id !== image.id)
-    galleryFeedback.value = 'Imagen eliminada.'
+    galleryFeedback.value = 'URL borrada de Firebase.'
   } catch (error) {
     console.error('No se pudo eliminar la imagen de galería.', error)
-    galleryFeedback.value = 'No se pudo eliminar la imagen.'
+    galleryFeedback.value = 'No se pudo borrar la URL.'
   } finally {
     galleryDeletingId.value = ''
   }
@@ -2687,6 +2691,12 @@ h1 {
 .gallery-admin-item-info .chip,
 .gallery-admin-item-info .danger-btn {
   padding: 6px 8px;
+  font-size: 0.7rem;
+}
+
+.gallery-static-label {
+  padding: 6px 8px;
+  color: rgba(255, 255, 255, 0.42);
   font-size: 0.7rem;
 }
 

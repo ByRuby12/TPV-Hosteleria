@@ -330,14 +330,6 @@
                 <p>{{ paidOrder.orderCount }} {{ paidOrder.orderCount === 1 ? 'comanda' : 'comandas' }} agrupadas</p>
                 <p>Entrada: {{ formatDateTime(paidOrder.createdAt) }}</p>
                 <p>Salida: {{ formatDateTime(paidOrder.paidAt ?? paidOrder.updatedAt) }}</p>
-                <p>{{ getPaymentLabel(paidOrder) }}</p>
-                <p v-if="getPaymentCashAmount(paidOrder) > 0">Efectivo: {{ formatPrice(getPaymentCashAmount(paidOrder)) }}</p>
-                <p v-if="getPaymentCardAmount(paidOrder) > 0">Tarjeta: {{ formatPrice(getPaymentCardAmount(paidOrder)) }}</p>
-                <div class="payment-history-items">
-                  <span v-for="item in paidOrder.items" :key="item.key" :class="{ rejected: item.rejected }">
-                    {{ item.quantity }}× {{ item.name }} · {{ item.rejected ? 'NO COBRADO' : formatPrice(item.subtotal) }}
-                  </span>
-                </div>
               </div>
               <div class="history-item-actions">
                 <span>{{ formatPrice(paidOrder.total) }}</span>
@@ -1191,15 +1183,13 @@ const downloadPaidOrderInvoice = (order: any) => {
     total: order.total,
     paymentMethod: getInvoicePaymentMethod(order),
     splitCount: order.paymentSplitCount ?? 1,
+    cashPeople: order.paymentCashPeople,
+    cardPeople: order.paymentCardPeople,
+    cashAmount: getPaymentCashAmount(order),
+    cardAmount: getPaymentCardAmount(order),
     paidAt: order.paidAt ?? order.updatedAt,
     company: companySettings.value,
   })
-}
-const getPaymentLabel = (payment: any) => {
-  const cashAmount = getPaymentCashAmount(payment)
-  const cardAmount = getPaymentCardAmount(payment)
-  if (cashAmount > 0 && cardAmount > 0) return 'Pago mixto'
-  return cardAmount > 0 ? 'Pago con tarjeta' : 'Pago en efectivo'
 }
 const getInvoicePaymentMethod = (payment: any) => {
   const cashAmount = getPaymentCashAmount(payment)

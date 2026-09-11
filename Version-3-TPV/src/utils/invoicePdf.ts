@@ -29,6 +29,10 @@ export type InvoiceData = {
   total: number
   paymentMethod: 'efectivo' | 'tarjeta' | 'mixto'
   splitCount?: number
+  cashPeople?: number
+  cardPeople?: number
+  cashAmount?: number
+  cardAmount?: number
   paidAt?: string
   company?: InvoiceCompany
 }
@@ -41,6 +45,10 @@ export const downloadInvoicePdf = ({
   total,
   paymentMethod,
   splitCount = 1,
+  cashPeople,
+  cardPeople,
+  cashAmount,
+  cardAmount,
   paidAt = new Date().toISOString(),
   company = {},
 }: InvoiceData) => {
@@ -80,6 +88,12 @@ export const downloadInvoicePdf = ({
   writeHeaderLine(`Fecha: ${date}`)
   writeHeaderLine(`Metodo de pago: ${paymentLabel}`)
   writeHeaderLine(`Cuenta dividida entre: ${safeSplitCount} ${safeSplitCount === 1 ? 'persona' : 'personas'}`)
+  if (cashAmount !== undefined && cashAmount > 0) {
+    writeHeaderLine(`Efectivo: ${cashPeople ?? 0} ${(cashPeople ?? 0) === 1 ? 'persona' : 'personas'} · ${formatPrice(cashAmount)}`)
+  }
+  if (cardAmount !== undefined && cardAmount > 0) {
+    writeHeaderLine(`Tarjeta: ${cardPeople ?? 0} ${(cardPeople ?? 0) === 1 ? 'persona' : 'personas'} · ${formatPrice(cardAmount)}`)
+  }
   y += 5
 
   document.setFontSize(11)

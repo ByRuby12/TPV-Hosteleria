@@ -60,6 +60,10 @@ type ClosedInvoice = {
   total: number
   paymentMethod: 'efectivo' | 'tarjeta' | 'mixto'
   splitCount?: number
+  cashPeople?: number
+  cardPeople?: number
+  cashAmount?: number
+  cardAmount?: number
   paidAt?: string
 }
 
@@ -118,6 +122,10 @@ const createClosedInvoice = (paidOrders: typeof orders.value, tableNumber: strin
     total: paidOrders.reduce((sum, order) => sum + order.total, 0),
     paymentMethod: getInvoicePaymentMethod(paidOrders[0] ?? { total: 0 }),
     splitCount: paidOrders[0]?.paymentSplitCount ?? 1,
+    cashPeople: paidOrders[0]?.paymentCashPeople,
+    cardPeople: paidOrders[0]?.paymentCardPeople,
+    cashAmount: paidOrders[0]?.paymentCashAmount,
+    cardAmount: paidOrders[0]?.paymentCardAmount,
     paidAt: paidOrders[0]?.paidAt,
   }
 }

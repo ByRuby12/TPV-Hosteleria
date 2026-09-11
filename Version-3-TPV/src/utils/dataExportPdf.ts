@@ -38,6 +38,73 @@ export const downloadDataExportPdf = (data: ExportData) => {
   const totalSales = data.paidOrders.reduce((sum, order) => sum + Number(order.total || 0), 0)
   const cashSales = data.paidOrders.reduce((sum, order) => sum + getPaymentCashAmount(order), 0)
   const cardSales = data.paidOrders.reduce((sum, order) => sum + getPaymentCardAmount(order), 0)
+  const totalItems = data.paidOrders.reduce((sum, order) =>
+    sum + (order.items ?? []).reduce((itemSum: number, item: any) => itemSum + Number(item.quantity || 0), 0), 0)
+  const paymentGroups = new Map<string, {
+    tableId: string
+    sessionId: string
+    orderCount: number
+    itemCount: number
+    entryAt: string
+    paidAt: string
+    total: number
+    cash: number
+    card: number
+  }>()
+  const productDemand = new Map<string, {
+    name: string
+    quantity: number
+    orderCount: number
+    rejectedQuantity: number
+    revenue: number
+  }>()
+
+  data.paidOrders.forEach((order) => {
+    const key = `${order.tableId ?? '-'}-${order.sessionId ?? '-'}-${order.paidAt ?? order.updatedAt ?? ''}`
+    const itemCount = (order.items ?? []).reduce((sum: number, item: any) => sum + Number(item.quantity || 0), 0)
+    const productsInOrder = new Set<string>()
+    ;(order.items ?? []).forEach((item: any) => {
+      const key = item.productId || item.name || 'producto'
+      const quantity = Number(item.quantity || 0)
+      const currentProduct = productDemand.get(key)
+      if (currentProduct) {
+        currentProduct.quantity += quantity
+        currentProduct.rejectedQuantity += item.status === 'REJECTED' ? quantity : 0
+        currentProduct.revenue += item.status === 'REJECTED' ? 0 : Number(item.subtotal || 0)
+        if (!productsInOrder.has(key)) currentProduct.orderCount += 1
+      } else {
+        productDemand.set(key, {
+          name: item.name || 'Producto sin nombre',
+          quantity,
+          orderCount: 1,
+          rejectedQuantity: item.status === 'REJECTED' ? quantity : 0,
+          revenue: item.status === 'REJECTED' ? 0 : Number(item.subtotal || 0),
+        })
+      }
+      productsInOrder.add(key)
+    })
+    const current = paymentGroups.get(key)
+    if (current) {
+      current.orderCount += 1
+      current.itemCount += itemCount
+      current.entryAt = new Date(order.createdAt).getTime() < new Date(current.entryAt).getTime() ? order.createdAt : current.entryAt
+      current.total += Number(order.total || 0)
+      current.cash += getPaymentCashAmount(order)
+      current.card += getPaymentCardAmount(order)
+    } else {
+      paymentGroups.set(key, {
+        tableId: order.tableId ?? '-',
+        sessionId: order.sessionId ?? '-',
+        orderCount: 1,
+        itemCount,
+        entryAt: order.createdAt,
+        paidAt: order.paidAt ?? order.updatedAt,
+        total: Number(order.total || 0),
+        cash: getPaymentCashAmount(order),
+        card: getPaymentCardAmount(order),
+      })
+    }
+  })
 
   const ensureSpace = (height = 8) => {
     if (y + height > 278) {
@@ -78,24 +145,40 @@ export const downloadDataExportPdf = (data: ExportData) => {
 
   section('Resumen economico')
   write(`Pedidos cobrados: ${data.paidOrders.length}`)
+  write(`Mesas cobradas: ${paymentGroups.size}`)
+  write(`Articulos servidos: ${totalItems}`)
   write(`Ventas totales: ${formatPrice(totalSales)}`)
   write(`Ventas en efectivo: ${formatPrice(cashSales)}`)
   write(`Ventas con tarjeta: ${formatPrice(cardSales)}`)
   write(`Cierres de caja: ${data.cashClosures.length}`)
   write(`Movimientos de caja: ${data.cashMovements.length}`)
 
-  section('Pedidos y pagos')
-  if (!data.paidOrders.length) {
-    write('No hay pedidos cobrados en este periodo.')
+  section('Resumen de pagos por mesa')
+  if (!paymentGroups.size) {
+    write('No hay pagos registrados en este periodo.')
   } else {
-    data.paidOrders.forEach((order) => {
-      const table = order.tableId || '-'
-      const method = order.paymentMethod || 'efectivo'
-      write(`Mesa ${table} | ${formatDate(order.paidAt ?? order.updatedAt)} | ${method} | ${formatPrice(order.total)}`, 10, true)
-      order.items?.forEach((item: any) => {
-        write(`  ${item.quantity} x ${item.name} - ${formatPrice(item.subtotal)}`, 9)
+    ;[...paymentGroups.values()]
+      .sort((left, right) => new Date(right.paidAt).getTime() - new Date(left.paidAt).getTime())
+      .forEach((payment) => {
+        write(`Mesa ${payment.tableId} | ${payment.orderCount} ${payment.orderCount === 1 ? 'comanda' : 'comandas'} | ${payment.itemCount} articulos`, 10, true)
+        write(`Entrada: ${formatDate(payment.entryAt)} | Salida: ${formatDate(payment.paidAt)}`, 9)
+        write(`Total: ${formatPrice(payment.total)} | Efectivo: ${formatPrice(payment.cash)} | Tarjeta: ${formatPrice(payment.card)}`, 9)
       })
-    })
+  }
+
+  section('Productos mas solicitados')
+  if (!productDemand.size) {
+    write('No hay productos pedidos en este periodo.')
+  } else {
+    ;[...productDemand.values()]
+      .sort((left, right) => right.quantity - left.quantity || right.revenue - left.revenue)
+      .slice(0, 20)
+      .forEach((product, index) => {
+        const rejectedNote = product.rejectedQuantity > 0
+          ? ` | Rechazadas: ${product.rejectedQuantity}`
+          : ''
+        write(`${index + 1}. ${product.name} | Pedidas: ${product.quantity} | Comandas: ${product.orderCount}${rejectedNote} | Ventas: ${formatPrice(product.revenue)}`, 9)
+      })
   }
 
   section('Caja')

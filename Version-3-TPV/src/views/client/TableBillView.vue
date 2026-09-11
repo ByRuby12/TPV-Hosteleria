@@ -124,6 +124,7 @@ import { useTableSessionStore } from '../../stores/tableSessionStore'
 import { useCompanySettings } from '../../stores/companySettings'
 import { downloadInvoicePdf } from '../../utils/invoicePdf'
 import { isOrderItemRejected } from '../../utils/orderItemStatus'
+import { getPaymentCardAmount, getPaymentCashAmount } from '../../utils/orderItemStatus'
 
 const router = useRouter()
 const { table, session, paymentRequested, ensureActiveSession, markPaymentRequested } = useTableSessionStore()
@@ -212,6 +213,10 @@ const downloadInvoice = () => {
     total: total.value,
     paymentMethod: orders.value[0]?.paymentMethod ?? paymentMethod.value,
     splitCount: orders.value[0]?.paymentSplitCount ?? peopleCount.value,
+    cashPeople: orders.value[0]?.paymentCashPeople,
+    cardPeople: orders.value[0]?.paymentCardPeople,
+    cashAmount: getPaymentCashAmount(orders.value[0] ?? { total: total.value, paymentMethod: paymentMethod.value }),
+    cardAmount: getPaymentCardAmount(orders.value[0] ?? { total: total.value, paymentMethod: paymentMethod.value }),
     paidAt: orders.value[0]?.paidAt,
     company: companySettings.value,
   })

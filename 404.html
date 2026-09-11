@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Redirigiendo...</title>
+    <script>
+      (() => {
+        const siteBase = '/TPV-Hosteleria'
+        const appBase = `${siteBase}/Version-3-TPV`
+        const path = window.location.pathname + window.location.search
+        const target = path.startsWith(appBase)
+          ? path.slice(appBase.length) || '/'
+          : path.startsWith(siteBase)
+            ? path.slice(siteBase.length) || '/'
+            : '/'
+
+        window.location.replace(`${appBase}/?redirect=${encodeURIComponent(target)}`)
+      })()
+    </script>
+  </head>
+  <body>
+    <p>Redirigiendo...</p>
+  </body>
+</html>

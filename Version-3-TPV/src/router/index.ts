@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHashHistory } from 'vue-router'
 import { getRoleLandingRoute, useAuthStore } from '../stores/authStore'
 import HomeView from '../views/client/HomeView.vue'
 import CartView from '../views/client/CartView.vue'
@@ -16,7 +16,7 @@ import AdminView from '../views/admin/AdminView.vue'
 const authStore = useAuthStore()
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHashHistory('/TPV-Hosteleria/Version-3-TPV/'),
   routes: [
     { path: '/', name: 'home', component: HomeView },
     { path: '/carrito', name: 'cart', component: CartView },

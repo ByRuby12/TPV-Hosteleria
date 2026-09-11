@@ -3583,22 +3583,28 @@ h1 {
   padding: 0;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
+  .admin-shell {
+    padding: 24px 16px 40px;
+  }
+
   .header {
-    flex-direction: column;
-    text-align: center;
+    padding: 28px 30px;
   }
 
-  h1 {
-    font-size: 2rem;
+  .management-panel {
+    padding: 24px;
   }
 
-  .cards-grid {
-    grid-template-columns: 1fr;
+  .stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    margin-bottom: 32px;
   }
 
-  .payment-stats-grid {
-    grid-template-columns: 1fr;
+  .stats-grid,
+  .data-export-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .cash-summary-grid {
@@ -3606,45 +3612,273 @@ h1 {
   }
 
   .cash-movement-form {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .admin-shell {
+    padding: 12px 10px 28px;
   }
 
-  .payment-stats-heading {
-    align-items: flex-start;
+  .header {
     flex-direction: column;
+    text-align: center;
+    align-items: stretch;
+    gap: 18px;
+    padding: 24px 18px;
+    margin-bottom: 24px;
+    border-radius: 18px;
   }
 
-  .data-management-header {
-    align-items: flex-start;
-    flex-direction: column;
+  .header-content {
+    min-width: 0;
   }
 
-  .data-export-grid {
+  h1 {
+    font-size: clamp(1.65rem, 7vw, 2.2rem);
+    line-height: 1.08;
+    overflow-wrap: anywhere;
+  }
+
+  .subtitle {
+    line-height: 1.45;
+  }
+
+  .session-info {
+    max-width: 100%;
+    line-height: 1.35;
+  }
+
+  .logout-btn,
+  .module-btn,
+  .form-actions > button,
+  .cash-actions > button {
+    width: 100%;
+  }
+
+  .stats {
     grid-template-columns: 1fr;
+    gap: 12px;
+    margin-bottom: 28px;
   }
 
-  .supplier-card {
-    flex-direction: column;
+  .stat-box {
+    min-width: 0;
+    padding: 18px;
+    gap: 14px;
+    border-radius: 14px;
   }
 
-  .supplier-actions {
-    justify-content: flex-start;
+  .stat-icon {
+    min-width: 48px;
+    font-size: 2.2rem;
   }
 
-  .product-create-form {
-    grid-template-columns: 1fr;
+  .stat-value {
+    font-size: 2rem;
   }
 
+  .section {
+    margin-bottom: 30px;
+  }
+
+  .section-title {
+    margin-bottom: 16px;
+    font-size: 1.35rem;
+  }
+
+  .cards-grid,
+  .stats-grid,
+  .data-export-grid,
+  .payment-stats-grid,
+  .form-grid,
+  .field-grid.two-columns,
   .field-grid.three-columns {
     grid-template-columns: 1fr;
   }
 
-  .edit-row {
+  .module-card {
+    padding: 20px 18px;
+    border-radius: 14px;
+  }
+
+  .management-panel {
+    padding: 18px 14px;
+    border-radius: 16px;
+  }
+
+  .panel-header {
+    margin-bottom: 20px;
+    padding-bottom: 14px;
+  }
+
+  .panel-header h2 {
+    font-size: 1.25rem;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+  }
+
+  .row,
+  .allergen-picker,
+  .history-header,
+  .cash-register-header,
+  .data-management-header,
+  .payment-stats-heading,
+  .supplier-card {
+    align-items: stretch;
     flex-direction: column;
   }
 
-  .edit-input {
+  .row input,
+  .row select,
+  .row button,
+  .allergen-picker select,
+  .allergen-picker button {
     width: 100%;
+    min-width: 0;
+  }
+
+  .product-create-form,
+  .edit-product-form,
+  .history-panel,
+  .cash-movements-section,
+  .cash-opening-form,
+  .cash-closing-form {
+    padding: 14px;
+  }
+
+  .list-item,
+  .flex-row,
+  .history-item,
+  .cash-movement-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .table-actions,
+  .product-actions,
+  .btn-group,
+  .supplier-actions,
+  .history-item-actions,
+  .cash-actions {
+    width: 100%;
+  }
+
+  .table-actions > button,
+  .product-actions > button,
+  .btn-group > button,
+  .supplier-actions > a,
+  .supplier-actions > button,
+  .history-item-actions > button,
+  .history-item-actions > span {
+    flex: 1 1 100%;
+    text-align: center;
+  }
+
+  .allergen-field {
+    min-width: 0;
+  }
+
+  .chart-container {
+    min-height: 350px;
+    padding: 16px 12px;
+  }
+
+  .chart-container h3 {
+    margin-bottom: 16px;
+    font-size: 1rem;
+  }
+
+  .chart-wrapper {
+    height: 320px;
+  }
+
+  .tab-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .tab-btn {
+    min-width: 0;
+    padding: 10px 8px;
+    font-size: 0.75rem;
+  }
+
+  .history-pagination {
+    gap: 8px;
+  }
+
+  .pagination-info {
+    min-width: 0;
+    flex: 1;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-shell {
+    padding-inline: 8px;
+  }
+
+  .header {
+    padding: 20px 14px;
+  }
+
+  .eyebrow {
+    font-size: 0.68rem;
+    letter-spacing: 1.4px;
+  }
+
+  .stat-box {
+    padding: 15px;
+  }
+
+  .section-title {
+    font-size: 1.2rem;
+  }
+
+  .management-panel {
+    padding-inline: 10px;
+  }
+
+  .tab-buttons {
+    grid-template-columns: 1fr;
+  }
+
+  .pagination-btn {
+    padding-inline: 10px;
+    font-size: 0.72rem;
+  }
+
+  .pagination-info {
+    font-size: 0.78rem;
+  }
+
+  .cash-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .data-export-card p {
+    min-height: 0;
+  }
+
+  .field-block input,
+  .field-block select,
+  .product-create-form input,
+  .product-create-form select,
+  .row input,
+  .row select {
+    font-size: 0.92rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-shell *,
+  .admin-shell *::before,
+  .admin-shell *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
   }
 }
 </style>

@@ -14,10 +14,10 @@
       </div>
       <p class="welcome-copy">Consulta la carta, añade lo que te apetezca y envía tu pedido cuando estés listo.</p>
 
-      <button class="primary" @click="router.push('/carta')">
+      <router-link class="primary" :to="{ name: 'menu' }">
         <span>Acceder a la carta</span>
         <span aria-hidden="true">→</span>
-      </button>
+      </router-link>
     </section>
 
     <section v-else class="card">
@@ -38,12 +38,11 @@
 
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { useTableSessionStore } from '../../stores/tableSessionStore'
 import { useCompanySettings } from '../../stores/companySettings'
 
 const route = useRoute()
-const router = useRouter()
 const { table, resolveByQrIdentifier, sessionLockedForAnotherTable } = useTableSessionStore()
 const { settings, loadSettings } = useCompanySettings()
 

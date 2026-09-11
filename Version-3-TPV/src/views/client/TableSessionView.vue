@@ -53,8 +53,9 @@ const restaurantInitials = computed(() => {
 })
 
 const normalizeImage = (value: string) => {
-  if (value.startsWith('http://') || value.startsWith('https://') || value.startsWith('/')) return value
-  return `/${value.replace(/^\.\//, '')}`
+  if (value.startsWith('http://') || value.startsWith('https://')) return value
+  const assetPath = value.replace(/^\.\//, '').replace(/^\//, '')
+  return `${import.meta.env.BASE_URL}${assetPath}`
 }
 
 onMounted(async () => {

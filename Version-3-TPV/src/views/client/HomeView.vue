@@ -244,8 +244,8 @@ const slugify = (value: string) =>
 const normalizeProductImage = (value?: string) => {
   if (!value) return ''
   if (value.startsWith('http://') || value.startsWith('https://')) return value
-  if (value.startsWith('/')) return value
-  return `/${value.replace(/^\.\//, '')}`
+  const assetPath = value.replace(/^\.\//, '').replace(/^\//, '')
+  return `${import.meta.env.BASE_URL}${assetPath}`
 }
 
 const productImageStyle = (product: any) => {

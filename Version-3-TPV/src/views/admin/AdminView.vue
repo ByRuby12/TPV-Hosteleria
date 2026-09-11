@@ -2081,12 +2081,20 @@ const openTable = (qrIdentifier: string) => {
   tableSessionStore.forceOpenTableByQrIdentifier(qrIdentifier)
   
   // Open the table view in a new window with admin flag
-  const route = `/mesa/${qrIdentifier}?from=admin`
-  window.open(route, '_blank', 'noopener,noreferrer')
+  const route = router.resolve({
+    name: 'table-session',
+    params: { qrIdentifier },
+    query: { from: 'admin' },
+  })
+  window.open(route.href, '_blank', 'noopener,noreferrer')
 }
 
 const downloadQr = async (table: any) => {
-  const url = `${window.location.origin}/mesa/${table.qrIdentifier}`
+  const route = router.resolve({
+    name: 'table-session',
+    params: { qrIdentifier: table.qrIdentifier },
+  })
+  const url = new URL(route.href, window.location.origin).href
   const canvas = await QRCode.toCanvas(url, {
     width: 640,
     margin: 2,

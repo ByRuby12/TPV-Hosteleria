@@ -15,7 +15,7 @@ import AdminView from '../views/admin/AdminView.vue'
 const authStore = useAuthStore()
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     { path: '/', redirect: '/login' },
     { path: '/carrito', name: 'cart', component: CartView },

@@ -3,6 +3,15 @@ import router from './router'
 import './style.css'
 import App from './App.vue'
 
+const redirect = new URLSearchParams(window.location.search).get('redirect')
+
+if (redirect) {
+  const target = decodeURIComponent(redirect)
+  if (target.startsWith('/')) {
+    router.replace(target)
+  }
+}
+
 window.addEventListener('error', (event) => {
 	const message = event.error?.message || event.message || ''
 	const stack = event.error?.stack || ''

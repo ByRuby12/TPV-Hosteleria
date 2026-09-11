@@ -80,17 +80,6 @@
               <p class="product-desc">{{ product.description || 'Producto de la carta.' }}</p>
 
               <div class="product-footer">
-                <div v-if="product.allergens?.length" class="allergens">
-                  <span
-                    v-for="allergen in product.allergens"
-                    :key="`${product.id}-${allergen}`"
-                    class="allergen-icon"
-                    :title="`Alérgeno: ${allergen}`"
-                  >
-                    <img :src="getAllergenAsset(allergen)" :alt="allergen" />
-                  </span>
-                </div>
-
                 <div class="product-actions">
                   <button
                     class="qty-btn qty-decrease"
@@ -115,6 +104,34 @@
               </div>
             </div>
           </article>
+        </div>
+      </section>
+
+      <section
+        v-if="galleryImages.length"
+        id="galeria"
+        :class="[
+          'category-section',
+          { 'hidden-section': selectedCategory !== 'gallery' },
+          { 'fade-in': selectedCategory === 'gallery' }
+        ]"
+      >
+        <div class="gallery-section">
+          <div class="gallery-heading">
+            <p class="section-label">{{ uiText.galleryEyebrow }}</p>
+            <h2>{{ uiText.galleryTitle }}</h2>
+          </div>
+          <div class="gallery-grid">
+            <button
+              v-for="(image, index) in galleryImages"
+              :key="`${image}-${index}`"
+              class="gallery-image"
+              type="button"
+              @click="openGalleryImage(image, index)"
+            >
+              <img :src="image" :alt="`${restaurantName} ${uiText.galleryImage} ${index + 1}`" loading="lazy" />
+            </button>
+          </div>
         </div>
       </section>
 
@@ -258,34 +275,6 @@ const productImageStyle = (product: any) => {
   }
 }
 
-const getAllergenAsset = (allergen: string) => {
-  const normalized = String(allergen).trim().toLowerCase()
-  const allergenFileMap: Record<string, string> = {
-    altramuces: 'altramuces',
-    apio: 'apio',
-    cacahuetes: 'cacahuetes',
-    crustaceos: 'crustaceos',
-    'free-alergenos': 'free-alergenos',
-    frutos: 'frutos',
-    gluten: 'gluten',
-    huevo: 'huevos',
-    huevos: 'huevos',
-    lactosa: 'lacteos',
-    lacteos: 'lacteos',
-    moluscos: 'moluscos',
-    mostaza: 'mostaza',
-    marisco: 'crustaceos',
-    pescado: 'pescado',
-    sesamo: 'sesamo',
-    soja: 'soja',
-    sulfitos: 'sulfitos',
-  }
-
-  const resolved = allergenFileMap[normalized] || normalized
-
-  return normalized ? `${import.meta.env.BASE_URL}alergenos/${resolved}.png` : ''
-}
-
 const uiText = computed(() => ({
   contactEyebrow: currentLang.value === 'en' ? 'Our information' : 'Nuestra información',
   contactTitle: currentLang.value === 'en' ? 'Contact' : 'Contacto',
@@ -295,6 +284,10 @@ const uiText = computed(() => ({
   emailLabel: currentLang.value === 'en' ? 'Email' : 'Email',
   followUs: currentLang.value === 'en' ? 'Follow us' : 'Síguenos',
   contactCategory: currentLang.value === 'en' ? 'Contact' : 'Contacto',
+  galleryCategory: currentLang.value === 'en' ? 'Gallery' : 'Galería',
+  galleryEyebrow: currentLang.value === 'en' ? 'A look inside' : 'Un vistazo al restaurante',
+  galleryTitle: currentLang.value === 'en' ? 'Gallery' : 'Galería',
+  galleryImage: currentLang.value === 'en' ? 'gallery image' : 'imagen de galería',
 }))
 
 const normalizeMenuCatalog = (payload: any) => {
@@ -437,8 +430,16 @@ const heroBannerStyle = computed(() => {
   }
 })
 
+const galleryImages = [
+  `${import.meta.env.BASE_URL}images/imagen1.jpg`,
+  `${import.meta.env.BASE_URL}images/banner-bar.jpeg`,
+  `${import.meta.env.BASE_URL}images/logo-bar.png`,
+  `${import.meta.env.BASE_URL}images/icono_web.png`,
+]
+
 const visibleCategories = computed(() => [
   ...categories.value,
+  { id: 'gallery', name: uiText.value.galleryCategory },
   { id: 'contact', name: uiText.value.contactCategory },
 ])
 
@@ -501,6 +502,13 @@ const openProductImage = (product: any) => {
   selectedProductImage.value = {
     src: product.image,
     alt: product.name || 'Producto',
+  }
+}
+
+const openGalleryImage = (src: string, index: number) => {
+  selectedProductImage.value = {
+    src,
+    alt: `${restaurantName.value} ${uiText.value.galleryImage} ${index + 1}`,
   }
 }
 

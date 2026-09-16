@@ -150,6 +150,9 @@ export const downloadInvoicePdf = ({
     tiktok: 'TikTok',
     whatsapp: 'WhatsApp',
     googleReviews: 'Google',
+    uberEats: 'Uber Eats',
+    justEat: 'Just Eat',
+    glovo: 'Glovo',
   }
   const socialLinks = Object.entries(company.socials ?? {})
     .filter(([, url]) => Boolean(url))

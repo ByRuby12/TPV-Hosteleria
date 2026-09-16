@@ -32,6 +32,9 @@ const loadStaticContentFallback = async (language: 'es' | 'en' = 'es'): Promise<
         instagram: socialLinks.instagram || defaultCompanySettings.socials.instagram,
         facebook: socialLinks.facebook || defaultCompanySettings.socials.facebook,
         googleReviews: payload?.contact?.reviewUrl || defaultCompanySettings.socials.googleReviews,
+        uberEats: socialLinks.ubereats || defaultCompanySettings.socials.uberEats,
+        justEat: socialLinks.justeat || defaultCompanySettings.socials.justEat,
+        glovo: socialLinks.glovo || defaultCompanySettings.socials.glovo,
       },
       logoImage: payload?.brand?.logoImage || defaultCompanySettings.logoImage,
       bannerImage: payload?.brand?.heroImage || defaultCompanySettings.bannerImage,
@@ -49,6 +52,9 @@ export type CompanySocialLinks = {
   facebook?: string
   youtube?: string
   googleReviews?: string
+  uberEats?: string
+  justEat?: string
+  glovo?: string
 }
 
 export type CompanySettings = {
@@ -91,6 +97,9 @@ export const defaultCompanySettings: CompanySettings = {
     facebook: 'https://www.facebook.com/mi-restaurante',
     youtube: 'https://www.youtube.com/@mi-restaurante',
     googleReviews: 'https://maps.google.com/?q=mi+restaurante',
+    uberEats: '',
+    justEat: '',
+    glovo: '',
   },
   logoImage: '',
   bannerImage: '',

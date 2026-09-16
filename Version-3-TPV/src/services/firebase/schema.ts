@@ -129,6 +129,9 @@ export type AppSettings = {
     instagram?: string
     facebook?: string
     googleReviews?: string
+    uberEats?: string
+    justEat?: string
+    glovo?: string
   }
   taxRate: number
   sessionTTLMinutes: number

@@ -692,6 +692,25 @@
             <input v-model="companyForm.googleReviews" placeholder="https://maps.google.com/..." />
           </div>
 
+          <div class="field-grid two-columns">
+            <div class="company-section-heading company-section-heading-wide">
+              <span>06</span>
+              <div><h3>Servicios a domicilio</h3><p>Añade los enlaces de tus plataformas de reparto.</p></div>
+            </div>
+            <div class="field-group">
+              <label>Uber Eats</label>
+              <input v-model="companyForm.uberEats" placeholder="https://ubereats.com/..." />
+            </div>
+            <div class="field-group">
+              <label>Just Eat</label>
+              <input v-model="companyForm.justEat" placeholder="https://justeat.es/..." />
+            </div>
+            <div class="field-group">
+              <label>Glovo</label>
+              <input v-model="companyForm.glovo" placeholder="https://glovoapp.com/..." />
+            </div>
+          </div>
+
           <div class="form-actions">
             <button class="ghost-btn" @click="saveCompanyProfile">Guardar información</button>
           </div>
@@ -1011,6 +1030,9 @@ const companyForm = ref({
   facebook: '',
   youtube: '',
   googleReviews: '',
+  uberEats: '',
+  justEat: '',
+  glovo: '',
 })
 
 watch(
@@ -1036,6 +1058,9 @@ watch(
       facebook: settings.socials?.facebook || '',
       youtube: settings.socials?.youtube || '',
       googleReviews: settings.socials?.googleReviews || '',
+      uberEats: settings.socials?.uberEats || '',
+      justEat: settings.socials?.justEat || '',
+      glovo: settings.socials?.glovo || '',
     }
   },
   { deep: true, immediate: true },
@@ -1064,6 +1089,9 @@ const saveCompanyProfile = async () => {
         facebook: companyForm.value.facebook.trim(),
         youtube: companyForm.value.youtube.trim(),
         googleReviews: companyForm.value.googleReviews.trim(),
+        uberEats: companyForm.value.uberEats.trim(),
+        justEat: companyForm.value.justEat.trim(),
+        glovo: companyForm.value.glovo.trim(),
       },
     })
   } catch (error) {

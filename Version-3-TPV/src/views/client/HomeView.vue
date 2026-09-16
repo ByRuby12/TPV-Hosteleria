@@ -118,34 +118,6 @@
       </section>
 
       <section
-        v-if="galleryImages.length"
-        id="galeria"
-        :class="[
-          'category-section',
-          { 'hidden-section': selectedCategory !== 'gallery' },
-          { 'fade-in': selectedCategory === 'gallery' }
-        ]"
-      >
-        <div class="gallery-section">
-          <div class="gallery-heading">
-            <p class="section-label">{{ uiText.galleryEyebrow }}</p>
-            <h2>{{ uiText.galleryTitle }}</h2>
-          </div>
-          <div class="gallery-grid">
-            <button
-              v-for="(image, index) in galleryImages"
-              :key="`${image}-${index}`"
-              class="gallery-image"
-              type="button"
-              @click="openGalleryImage(image, index)"
-            >
-              <img :src="image" :alt="`${restaurantName} ${uiText.galleryImage} ${index + 1}`" loading="lazy" />
-            </button>
-          </div>
-        </div>
-      </section>
-
-      <section
         v-if="companyInfoReady"
         id="contacto"
         :class="[
@@ -217,8 +189,26 @@
                   class="social-link"
                   :class="link.className"
                 >
-                  <span>{{ link.icon }}</span>
+                  <i :class="link.iconClass" aria-hidden="true"></i>
                   {{ link.label }}
+                </a>
+              </div>
+            </div>
+
+            <div v-if="deliveryServices.length" class="social-section delivery-services-section">
+              <p class="social-title">{{ uiText.deliveryServices }}</p>
+              <div class="social-links delivery-services">
+                <a
+                  v-for="service in deliveryServices"
+                  :key="service.label"
+                  :href="service.url"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="social-link delivery-service-link"
+                  :class="service.className"
+                >
+                  <span class="service-logo" aria-hidden="true">{{ service.logo }}</span>
+                  <span>{{ uiText.accessService }} {{ service.label }}</span>
                 </a>
               </div>
             </div>
@@ -321,11 +311,9 @@ const uiText = computed(() => ({
   hoursLabel: currentLang.value === 'en' ? 'Hours' : 'Horario',
   emailLabel: currentLang.value === 'en' ? 'Email' : 'Email',
   followUs: currentLang.value === 'en' ? 'Follow us' : 'Síguenos',
+  deliveryServices: currentLang.value === 'en' ? 'Order at home' : 'Servicios a domicilio',
+  accessService: currentLang.value === 'en' ? 'Order with' : 'Pedir en',
   contactCategory: currentLang.value === 'en' ? 'Contact' : 'Contacto',
-  galleryCategory: currentLang.value === 'en' ? 'Gallery' : 'Galería',
-  galleryEyebrow: currentLang.value === 'en' ? 'A look inside' : 'Un vistazo al restaurante',
-  galleryTitle: currentLang.value === 'en' ? 'Gallery' : 'Galería',
-  galleryImage: currentLang.value === 'en' ? 'gallery image' : 'imagen de galería',
 }))
 
 const normalizeMenuCatalog = (payload: any) => {
@@ -468,34 +456,37 @@ const heroBannerStyle = computed(() => {
   }
 })
 
-const galleryImages = ref<string[]>([])
-
 const visibleCategories = computed(() => [
   ...categories.value,
-  ...(galleryImages.value.length ? [{ id: 'gallery', name: uiText.value.galleryCategory }] : []),
   { id: 'contact', name: uiText.value.contactCategory },
 ])
 
 const companyInfoReady = computed(() => !!settings.value.restaurantName)
 
 const socialLinks = computed(() => {
-  const items: { label: string; url: string; icon: string; className: string }[] = []
+  const items: { label: string; url: string; iconClass: string; className: string }[] = []
   const map = [
-    { key: 'tiktok', label: 'TikTok', url: settings.value.socials?.tiktok, icon: '♪', className: 'tiktok' },
-    { key: 'whatsapp', label: 'WhatsApp', url: settings.value.socials?.whatsapp, icon: '💬', className: 'whatsapp' },
-    { key: 'instagram', label: 'Instagram', url: settings.value.socials?.instagram, icon: '◎', className: 'instagram' },
-    { key: 'facebook', label: 'Facebook', url: settings.value.socials?.facebook, icon: 'f', className: 'facebook' },
-    { key: 'googleReviews', label: 'Google', url: settings.value.socials?.googleReviews, icon: '★', className: 'google' },
+    { label: 'TikTok', url: settings.value.socials?.tiktok, iconClass: 'fa-brands fa-tiktok', className: 'tiktok' },
+    { label: 'WhatsApp', url: settings.value.socials?.whatsapp, iconClass: 'fa-brands fa-whatsapp', className: 'whatsapp' },
+    { label: 'Instagram', url: settings.value.socials?.instagram, iconClass: 'fa-brands fa-instagram', className: 'instagram' },
+    { label: 'Facebook', url: settings.value.socials?.facebook, iconClass: 'fa-brands fa-facebook-f', className: 'facebook' },
+    { label: 'Google', url: settings.value.socials?.googleReviews, iconClass: 'fa-brands fa-google', className: 'google' },
   ]
 
   map.forEach((item) => {
     if (item.url) {
-      items.push({ label: item.label, url: item.url, icon: item.icon, className: item.className })
+      items.push({ label: item.label, url: item.url, iconClass: item.iconClass, className: item.className })
     }
   })
 
   return items
 })
+
+const deliveryServices = computed(() => [
+  { label: 'Uber Eats', logo: 'ubereats', url: settings.value.socials?.uberEats, className: 'uber-eats' },
+  { label: 'Just Eat', logo: 'just eat', url: settings.value.socials?.justEat, className: 'just-eat' },
+  { label: 'Glovo', logo: 'glovo', url: settings.value.socials?.glovo, className: 'glovo' },
+].filter((service) => service.url))
 
 watch(
   categories,
@@ -538,13 +529,6 @@ const openProductImage = (product: any) => {
   }
 }
 
-const openGalleryImage = (src: string, index: number) => {
-  selectedProductImage.value = {
-    src,
-    alt: `${restaurantName.value} ${uiText.value.galleryImage} ${index + 1}`,
-  }
-}
-
 const closeImageModal = () => {
   selectedProductImage.value = null
 }
@@ -559,22 +543,6 @@ const toggleLanguage = async () => {
   ])
 }
 
-const hydrateGallery = async () => {
-  if (!db) return
-
-  try {
-    const uploadedImages = await getCollectionSnapshot<any>('galleryImages')
-    const uploadedUrls = uploadedImages
-      .sort((left, right) => String(left.createdAt || '').localeCompare(String(right.createdAt || '')))
-      .map((image) => image.url)
-      .filter(Boolean)
-
-    galleryImages.value = uploadedUrls
-  } catch (error) {
-    console.warn('No se pudo cargar la galería de imágenes.', error)
-  }
-}
-
 onMounted(async () => {
   const storedLang = localStorage.getItem('tpv-client-lang')
 
@@ -583,7 +551,6 @@ onMounted(async () => {
   await Promise.all([
     hydrateClientCatalog(currentLang.value),
     loadSettings(currentLang.value),
-    hydrateGallery(),
   ])
 })
 

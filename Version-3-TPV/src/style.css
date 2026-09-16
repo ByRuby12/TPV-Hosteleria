@@ -1000,7 +1000,7 @@ body.dark-mode .product-title {
 
 .social-links {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 12px;
     max-width: 640px;
     margin: 0 auto;
@@ -1010,15 +1010,21 @@ body.dark-mode .product-title {
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    flex-direction: column;
     gap: 8px;
-    padding: 0.9rem 1rem;
-    border-radius: 999px;
+    min-height: 92px;
+    padding: 0.85rem 0.65rem;
+    border-radius: 18px;
     text-decoration: none;
     font-size: 0.88rem;
     font-weight: 700;
     border: 1px solid transparent;
     transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
     box-shadow: 0 12px 22px rgba(16,42,67,0.08);
+}
+
+.social-link > i {
+    font-size: 1.55rem;
 }
 
 .social-link:hover {
@@ -1048,11 +1054,53 @@ body.dark-mode .product-title {
 }
 
 .social-link.google {
-    grid-column: 1 / -1;
+    grid-column: auto;
     background: linear-gradient(135deg, #facc15, #f59e0b);
     color: #1f2937;
-    padding: 1rem 1.4rem;
-    font-size: 0.95rem;
+    padding: 0.85rem 0.65rem;
+    font-size: 0.88rem;
+}
+
+.delivery-services-section {
+    margin-top: 28px;
+}
+
+.delivery-services {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.delivery-service-link {
+    min-height: 126px;
+    border-radius: 20px;
+    gap: 10px;
+}
+
+.service-logo {
+    display: grid;
+    width: 100%;
+    min-height: 48px;
+    place-items: center;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.18);
+    font-size: 1.05rem;
+    font-weight: 900;
+    letter-spacing: 0.01em;
+    text-transform: lowercase;
+}
+
+.social-link.uber-eats {
+    background: #06c167;
+    color: #ffffff;
+}
+
+.social-link.just-eat {
+    background: #ff8000;
+    color: #ffffff;
+}
+
+.social-link.glovo {
+    background: #ffc244;
+    color: #1f2937;
 }
 
 body.dark-mode .contact-section {
@@ -1101,6 +1149,18 @@ body.dark-mode .social-link.google {
 }
 
 @media (max-width: 680px) {
+    .social-links {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .social-link.google {
+        grid-column: 1 / -1;
+    }
+
+    .delivery-services {
+        grid-template-columns: 1fr;
+    }
+
     .contact-actions .btn-action {
         width: 100%;
         min-width: 0;

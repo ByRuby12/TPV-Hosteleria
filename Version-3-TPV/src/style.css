@@ -1085,15 +1085,17 @@ body.dark-mode .product-title {
 
 .service-logo {
     display: grid;
-    width: 100%;
-    min-height: 48px;
+    width: 52px;
+    height: 52px;
     place-items: center;
-    border-radius: 12px;
-    background: rgba(255,255,255,0.18);
-    font-size: 1.05rem;
-    font-weight: 900;
-    letter-spacing: 0.01em;
-    text-transform: lowercase;
+    border-radius: 14px;
+    background: rgba(255,255,255,0.2);
+}
+
+.service-logo img {
+    width: 34px;
+    height: 34px;
+    object-fit: contain;
 }
 
 .service-name {

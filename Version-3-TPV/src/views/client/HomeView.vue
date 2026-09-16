@@ -207,7 +207,9 @@
                   class="social-link delivery-service-link"
                   :class="service.className"
                 >
-                  <span class="service-logo" aria-hidden="true">{{ service.logo }}</span>
+                  <span class="service-logo" aria-hidden="true">
+                    <img :src="service.logo" :alt="`${service.label} logo`" />
+                  </span>
                   <span class="service-name">{{ service.label }}</span>
                 </a>
               </div>
@@ -482,9 +484,9 @@ const socialLinks = computed(() => {
 })
 
 const deliveryServices = computed(() => [
-  { label: 'Uber Eats', logo: 'ubereats', url: settings.value.socials?.uberEats, className: 'uber-eats' },
-  { label: 'Just Eat', logo: 'just eat', url: settings.value.socials?.justEat, className: 'just-eat' },
-  { label: 'Glovo', logo: 'glovo', url: settings.value.socials?.glovo, className: 'glovo' },
+  { label: 'Uber Eats', logo: 'https://cdn.simpleicons.org/ubereats/ffffff', url: settings.value.socials?.uberEats, className: 'uber-eats' },
+  { label: 'Just Eat', logo: 'https://cdn.simpleicons.org/justeat/ffffff', url: settings.value.socials?.justEat, className: 'just-eat' },
+  { label: 'Glovo', logo: 'https://cdn.simpleicons.org/glovo/1f2937', url: settings.value.socials?.glovo, className: 'glovo' },
 ].filter((service) => service.url))
 
 watch(

@@ -490,6 +490,10 @@ main {
     padding: 270px 20px 10px;
 }
 
+.client-shell > main {
+    padding-bottom: 104px;
+}
+
 .category-section {
     margin-top: 18px;
     margin-bottom: 48px;

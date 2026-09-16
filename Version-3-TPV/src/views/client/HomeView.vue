@@ -145,7 +145,7 @@
 
             <div class="contact-info-grid">
               <div class="contact-info-card">
-                <span class="contact-info-icon">📍</span>
+                <span class="contact-info-icon"><i class="fa-solid fa-location-dot" aria-hidden="true"></i></span>
                 <div>
                   <strong>{{ uiText.addressLabel }}</strong>
                   <p>{{ settings.address }}</p>
@@ -153,7 +153,7 @@
               </div>
 
               <div class="contact-info-card">
-                <span class="contact-info-icon">📞</span>
+                <span class="contact-info-icon"><i class="fa-solid fa-phone" aria-hidden="true"></i></span>
                 <div>
                   <strong>{{ uiText.phoneLabel }}</strong>
                   <p>{{ settings.phone }}</p>
@@ -161,7 +161,7 @@
               </div>
 
               <div class="contact-info-card">
-                <span class="contact-info-icon">🕒</span>
+                <span class="contact-info-icon"><i class="fa-solid fa-clock" aria-hidden="true"></i></span>
                 <div>
                   <strong>{{ uiText.hoursLabel }}</strong>
                   <p>{{ settings.openingHours }}</p>
@@ -169,7 +169,7 @@
               </div>
 
               <div class="contact-info-card">
-                <span class="contact-info-icon">✉️</span>
+                <span class="contact-info-icon"><i class="fa-solid fa-envelope" aria-hidden="true"></i></span>
                 <div>
                   <strong>{{ uiText.emailLabel }}</strong>
                   <p>{{ settings.email }}</p>
@@ -208,7 +208,7 @@
                   :class="service.className"
                 >
                   <span class="service-logo" aria-hidden="true">{{ service.logo }}</span>
-                  <span>{{ uiText.accessService }} {{ service.label }}</span>
+                  <span class="service-name">{{ service.label }}</span>
                 </a>
               </div>
             </div>
@@ -312,7 +312,6 @@ const uiText = computed(() => ({
   emailLabel: currentLang.value === 'en' ? 'Email' : 'Email',
   followUs: currentLang.value === 'en' ? 'Follow us' : 'Síguenos',
   deliveryServices: currentLang.value === 'en' ? 'Order at home' : 'Servicios a domicilio',
-  accessService: currentLang.value === 'en' ? 'Order with' : 'Pedir en',
   contactCategory: currentLang.value === 'en' ? 'Contact' : 'Contacto',
 }))
 

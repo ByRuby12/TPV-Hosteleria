@@ -881,24 +881,29 @@ body.dark-mode .product-title {
 
 .contact-info-card {
     display: grid;
-    grid-template-columns: 44px minmax(0, 1fr);
+    grid-template-columns: 36px minmax(0, 1fr);
     gap: 12px;
     background: rgba(232,93,4,0.06);
     border: 1px solid rgba(232,93,4,0.16);
     border-radius: 22px;
-    padding: 14px 16px;
+    padding: 12px 14px;
     align-items: center;
     width: min(100%, 560px);
+    min-width: 0;
 }
 
 .contact-info-icon {
-    width: 44px;
-    height: 44px;
+    width: 36px;
+    height: 36px;
     display: grid;
     place-items: center;
     border-radius: 16px;
     background: rgba(232,93,4,0.13);
-    font-size: 1.1rem;
+    font-size: 0.9rem;
+}
+
+.contact-info-card > div {
+    min-width: 0;
 }
 
 .contact-info-card strong {
@@ -913,7 +918,9 @@ body.dark-mode .product-title {
     margin: 0;
     color: var(--text-muted);
     line-height: 1.6;
-    font-size: 14px;
+    font-size: 13px;
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 
 .contact-info-card a {
@@ -1070,6 +1077,7 @@ body.dark-mode .product-title {
 }
 
 .delivery-service-link {
+    flex-direction: column;
     min-height: 126px;
     border-radius: 20px;
     gap: 10px;
@@ -1086,6 +1094,11 @@ body.dark-mode .product-title {
     font-weight: 900;
     letter-spacing: 0.01em;
     text-transform: lowercase;
+}
+
+.service-name {
+    display: block;
+    line-height: 1.2;
 }
 
 .social-link.uber-eats {
@@ -1149,6 +1162,34 @@ body.dark-mode .social-link.google {
 }
 
 @media (max-width: 680px) {
+    .contact-info-grid {
+        gap: 10px;
+    }
+
+    .contact-info-card {
+        grid-template-columns: 32px minmax(0, 1fr);
+        gap: 8px;
+        padding: 10px 11px;
+        border-radius: 16px;
+    }
+
+    .contact-info-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 11px;
+        font-size: 0.78rem;
+    }
+
+    .contact-info-card strong {
+        margin-bottom: 3px;
+        font-size: 0.8rem;
+    }
+
+    .contact-info-card p {
+        font-size: 0.76rem;
+        line-height: 1.35;
+    }
+
     .social-links {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }

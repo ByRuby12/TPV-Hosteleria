@@ -291,6 +291,8 @@ const getAllergenAsset = (allergen: string) => {
     huevos: 'huevos',
     lactosa: 'lacteos',
     lacteos: 'lacteos',
+    'frutos secos': 'frutos',
+    'frutos-secos': 'frutos',
     moluscos: 'moluscos',
     mostaza: 'mostaza',
     marisco: 'crustaceos',
